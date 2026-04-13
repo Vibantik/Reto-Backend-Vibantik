@@ -77,8 +77,15 @@ const getAllTransactions = async (query) => {
   };
 };
 
-const getTransactionById = (id) => {
-  return transactions.find((tx) => tx.id === Number(id));
+const getTransactionById = async (id) => {
+  // TODO: Get transactions from DB
+  const transaction = transactions.find((tx) => tx.id === Number(id));
+  if (!transaction.category) {
+    const category = await categorize(transaction);
+    // TODO: Update in DB
+    transaction.category = category;
+  }
+  return transaction;
 };
 
 module.exports = {
