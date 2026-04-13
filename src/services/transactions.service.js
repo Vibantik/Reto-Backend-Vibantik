@@ -24,9 +24,6 @@ const getAllTransactions = async (query) => {
         results[i].category = category;
       }
     }
-    results.forEach(async (transaction, index, array) => {
-      
-    });
   }
 
   if (type && type !== "all") {
