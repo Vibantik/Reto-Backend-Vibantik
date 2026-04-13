@@ -1,6 +1,4 @@
-const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require("pg");
 
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -8,19 +6,17 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
-  ssl: {
-    rejectUnauthorized: true,
-    ca: fs.readFileSync(path.join(__dirname, '..', 'ca.pem')).toString(),
-  },
+  ssl: false,
 });
 
-pool.connect()
-  .then(client => {
-    console.log('conectado');
+pool
+  .connect()
+  .then((client) => {
+    console.log("conectado");
     client.release();
   })
-  .catch(err => {
-    console.error('no conectado:', err.message || err); //! HELP
+  .catch((err) => {
+    console.error("no conectado:", err.message || err);
   });
 
 module.exports = pool;
