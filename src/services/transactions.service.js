@@ -21,6 +21,7 @@ const getAllTransactions = async (query) => {
     for (let i = 0; i < results.length; i++) {
       if (!results[i].category) {
         const category = await categorize(results[i]);
+        // TODO: Update in DB
         results[i].category = category;
       }
     }
