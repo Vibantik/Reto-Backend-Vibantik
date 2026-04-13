@@ -3,8 +3,8 @@ const {
   getTransactionById,
 } = require("../services/transactions.service");
 
-const getTransactions = (req, res) => {
-  const result = getAllTransactions(req.query);
+const getTransactions = async (req, res) => {
+  const result = await getAllTransactions(req.query);
   res.status(200).json(result);
 };
 

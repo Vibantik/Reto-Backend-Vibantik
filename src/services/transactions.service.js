@@ -1,6 +1,7 @@
 const transactions = require("../data/transactions.mock");
+const categorize = require("./transactions_categorization.service");
 
-const getAllTransactions = (query) => {
+const getAllTransactions = async (query) => {
   const {
     page = 1,
     limit = 15,
@@ -13,6 +14,20 @@ const getAllTransactions = (query) => {
 
   // TODO: Get transactions from DB
   let results = [...transactions];
+
+  /* TRANSACTION CATEGORIZATION */
+  const nonCategorized = results.some((transaction) => !transaction.category);
+  if (nonCategorized) {
+    for (let i = 0; i < results.length; i++) {
+      if (!results[i].category) {
+        const category = await categorize(results[i]);
+        results[i].category = category;
+      }
+    }
+    results.forEach(async (transaction, index, array) => {
+      
+    });
+  }
 
   if (type && type !== "all") {
     results = results.filter((tx) => tx.type === type);
