@@ -18,7 +18,7 @@ const createConversation = async (req, res) => {
 
 const getConversations = async (req, res) => {
   try {
-    const { uuid_de_usuario } = req.body;
+    const { uuid_de_usuario } = req.params;
 
     if (!uuid_de_usuario) {
       return res.status(400).json({ message: "uuid_de_usuario es requerido" });
@@ -33,7 +33,7 @@ const getConversations = async (req, res) => {
 
 const getMessages = async (req, res) => {
   try {
-    const { id_conv } = req.body;
+    const { id_conv } = req.params;
 
     if (!id_conv) {
       return res.status(400).json({ message: "id_conv es requerido" });

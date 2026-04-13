@@ -21,7 +21,7 @@ const getConversations = async (uuidDeUsuario) => {
   }
 
   const query = `
-    SELECT * FROM Conversacion WHERE uuid_de_usuario = $1;
+    SELECT * FROM Conversacion WHERE uuid_de_usuario = $1 ORDER BY fecha DESC;
   `;
 
   const result = await pool.query(query, [uuidDeUsuario]);
