@@ -44,6 +44,7 @@ async function AI(transaction) {
     const json = await response.json();
     // TODO: Fallback if model error
     const category = JSON.parse(json.response).category;
+    // TODO: Add new category to DB
     if (!categories.includes(category)) categories.push(category);
     return category;
 }
