@@ -11,6 +11,7 @@ const getAllTransactions = (query) => {
     endDate,
   } = query;
 
+  // TODO: Get transactions from DB
   let results = [...transactions];
 
   if (type && type !== "all") {
