@@ -1,6 +1,7 @@
-const transactions = require("../data/transactions.mock");
+const categorize = require("./transactions_categorization.service");
+const pool = require("../connect");
 
-const getAllTransactions = (query) => {
+const getAllTransactions = async (query) => {
   const {
     page = 1,
     limit = 15,
@@ -11,47 +12,83 @@ const getAllTransactions = (query) => {
     endDate,
   } = query;
 
-  let results = [...transactions];
+  const values = [];
+  const conditions = [];
+  let index = 1;
 
   if (type && type !== "all") {
-    results = results.filter((tx) => tx.type === type);
+    conditions.push(`type = $${index++}`);
+    values.push(type);
   }
 
   if (category && category !== "all") {
-    results = results.filter((tx) => tx.category === category);
+    conditions.push(`category = $${index++}`);
+    values.push(category);
   }
 
   if (search) {
-    const searchLower = search.toLowerCase();
-    results = results.filter(
-      (tx) =>
-        tx.description.toLowerCase().includes(searchLower) ||
-        tx.amount.toString().includes(searchLower)
-    );
+    conditions.push(`LOWER(description) LIKE LOWER($${index++})`);
+    values.push(`%${search}%`);
   }
 
   if (startDate) {
-    results = results.filter((tx) => new Date(tx.date) >= new Date(startDate));
+    conditions.push(`date >= $${index++}`);
+    values.push(startDate);
   }
 
   if (endDate) {
-    results = results.filter((tx) => new Date(tx.date) <= new Date(endDate));
+    conditions.push(`date <= $${index++}`);
+    values.push(endDate);
   }
 
-  results.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const currentPage = Number(page);
   const perPage = Number(limit);
-  const totalItems = results.length;
+  const offset = (currentPage - 1) * perPage;
+
+  const dataQuery = `
+    SELECT id, date, description, category, type, amount
+    FROM transactions
+    ${whereClause}
+    ORDER BY date DESC, id DESC
+    LIMIT $${index++} OFFSET $${index++}
+  `;
+
+  values.push(perPage, offset);
+
+  const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM transactions
+    ${whereClause}
+  `;
+
+  const countValues = values.slice(0, values.length - 2);
+
+  const [dataResult, countResult] = await Promise.all([
+    pool.query(dataQuery, values),
+    pool.query(countQuery, countValues),
+  ]);
+
+  const totalItems = Number(countResult.rows[0].total);
   const totalPages = Math.ceil(totalItems / perPage);
 
-  const startIndex = (currentPage - 1) * perPage;
-  const endIndex = startIndex + perPage;
-
-  const paginatedData = results.slice(startIndex, endIndex);
+  /* TRANSACTION CATEGORIZATION */
+  const nonCategorized = dataResult.rows.some((transaction) => !transaction.category);
+  if (nonCategorized) {
+    for (let i = 0; i < dataResult.rows.length; i++) {
+      if (!dataResult.rows[i].category) {
+        // TODO: Check first in DB
+        const category = await categorize(dataResult.rows[i]);
+        // TODO: Update in DB
+        dataResult.rows[i].category = category;
+      }
+    }
+  }
 
   return {
-    data: paginatedData,
+    data: dataResult.rows,
     pagination: {
       page: currentPage,
       limit: perPage,
@@ -63,8 +100,22 @@ const getAllTransactions = (query) => {
   };
 };
 
-const getTransactionById = (id) => {
-  return transactions.find((tx) => tx.id === Number(id));
+const getTransactionById = async (id) => {
+  const result = await pool.query(
+    `
+    SELECT id, date, description, category, type, amount
+    FROM transactions
+    WHERE id = $1
+    `,
+    [id]
+  );
+
+  if (!result.rows[0].category) {
+    const category = await categorize(result.rows[0]);
+    // TODO: Update in DB
+    result.rows[0].category = category;
+  }
+  return result.rows[0] || null;
 };
 
 module.exports = {
