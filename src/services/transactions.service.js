@@ -20,6 +20,7 @@ const getAllTransactions = async (query) => {
   if (nonCategorized) {
     for (let i = 0; i < results.length; i++) {
       if (!results[i].category) {
+        // TODO: Check first in DB
         const category = await categorize(results[i]);
         // TODO: Update in DB
         results[i].category = category;
