@@ -4,6 +4,9 @@ const OLLAMA_URL = process.env.OLLAMA_URL +"api/chat";
 const MODEL = process.env.MODEL;
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT_CHATINIT;
 
+//https://www.ocrwebservice.com/api/restguide  + https://ocr.space/OCRAPI
+//https://www.opswat.com/docs/mdcloud/metadefender-cloud-api-v4#file-lookupbydataid
+
 const startChatbot = async (req, res) => {
     try {
     const { messages } = req.body; 
