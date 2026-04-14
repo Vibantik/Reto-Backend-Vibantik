@@ -1,6 +1,6 @@
 const {
   getUserSettings,
-} = require("../services/settings.service");
+} = require("../services/ajustes.service");
 
 const getSettings = async (req, res) => {
   try {
