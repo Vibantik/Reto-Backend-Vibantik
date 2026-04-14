@@ -1,3 +1,4 @@
+const categorize = require("./transactions_categorization.service");
 const pool = require("../connect");
 
 const getAllTransactions = async (query) => {
@@ -73,6 +74,19 @@ const getAllTransactions = async (query) => {
   const totalItems = Number(countResult.rows[0].total);
   const totalPages = Math.ceil(totalItems / perPage);
 
+  /* TRANSACTION CATEGORIZATION */
+  const nonCategorized = dataResult.rows.some((transaction) => !transaction.category);
+  if (nonCategorized) {
+    for (let i = 0; i < dataResult.rows.length; i++) {
+      if (!dataResult.rows[i].category) {
+        // TODO: Check first in DB
+        const category = await categorize(dataResult.rows[i]);
+        // TODO: Update in DB
+        dataResult.rows[i].category = category;
+      }
+    }
+  }
+
   return {
     data: dataResult.rows,
     pagination: {
@@ -96,6 +110,11 @@ const getTransactionById = async (id) => {
     [id]
   );
 
+  if (!result.rows[0].category) {
+    const category = await categorize(result.rows[0]);
+    // TODO: Update in DB
+    result.rows[0].category = category;
+  }
   return result.rows[0] || null;
 };
 

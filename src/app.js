@@ -13,6 +13,9 @@ app.get("/", (req, res) => {
   });
 });
 
+// TODO: Return latency in JSON
+app.get("/api/ping", (req, res) => { res.send("Pong!") });
+
 app.use("/api/transactions", transactionsRoutes);
 
 module.exports = app;

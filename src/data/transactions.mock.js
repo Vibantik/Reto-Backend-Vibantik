@@ -18,7 +18,11 @@ const transactions = [
   { id: 17, date: "2026-04-02", description: "Mercado Libre", category: "Compras", type: "egreso", amount: 560 },
   { id: 18, date: "2026-04-02", description: "Uber Eats", category: "Comida", type: "egreso", amount: 240 },
   { id: 19, date: "2026-04-01", description: "CFE", category: "Servicios", type: "egreso", amount: 680 },
-  { id: 20, date: "2026-04-01", description: "Deposito", category: "Ingreso", type: "ingreso", amount: 1800 }
+  { id: 20, date: "2026-04-01", description: "Deposito", category: "Ingreso", type: "ingreso", amount: 1800 },
+  { id: 21, date: "2026-04-20", description: "Deposito", type: "ingreso", amount: 1800 },
+  { id: 22, date: "2026-04-20", description: "El Puerto de Liverpool", type: "egreso", amount: 1800 },
+  { id: 23, date: "2026-04-20", description: "Sephora", type: "egreso", amount: 1800 },
+  { id: 24, date: "2026-04-20", description: "Caliente.mx", type: "egreso", amount: 1800 }
 ];
 
 module.exports = transactions;
