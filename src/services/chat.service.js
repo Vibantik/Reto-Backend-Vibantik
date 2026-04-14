@@ -5,15 +5,23 @@ const startConversation = async (uuidDeUsuario) => {
     throw new Error("uuid_de_usuario es requerido");
   }
 
+  const deactivateQuery = `
+    UPDATE Conversacion
+    SET activa = false
+    WHERE uuid_de_usuario = $1 AND activa = true;
+  `;
+  await pool.query(deactivateQuery, [uuidDeUsuario]);
+
+
   const query = `
-    INSERT INTO Conversacion (uuid_de_usuario)
-    VALUES ($1)
+    INSERT INTO Conversacion (uuid_de_usuario, activa)
+    VALUES ($1, true)
     RETURNING id_conv;
   `;
-
   const result = await pool.query(query, [uuidDeUsuario]);
   return result.rows[0].id_conv;
 };
+
 
 const getConversations = async (uuidDeUsuario) => {
  if (!uuidDeUsuario) {
