@@ -49,10 +49,10 @@ const getAllTransactions = async (query) => {
   const offset = (currentPage - 1) * perPage;
 
   const dataQuery = `
-    SELECT id, date, description, category, type, amount
-    FROM transactions
+    SELECT "id_transacción" AS id, date, description, category, type, amount
+    FROM transacciones
     ${whereClause}
-    ORDER BY date DESC, id DESC
+    ORDER BY date DESC, "id_transacción" DESC
     LIMIT $${index++} OFFSET $${index++}
   `;
 
@@ -60,7 +60,7 @@ const getAllTransactions = async (query) => {
 
   const countQuery = `
     SELECT COUNT(*) AS total
-    FROM transactions
+    FROM transacciones
     ${whereClause}
   `;
 
@@ -75,13 +75,15 @@ const getAllTransactions = async (query) => {
   const totalPages = Math.ceil(totalItems / perPage);
 
   /* TRANSACTION CATEGORIZATION */
-  const nonCategorized = dataResult.rows.some((transaction) => !transaction.category);
+  const nonCategorized = dataResult.rows.some((t) => !t.category);
   if (nonCategorized) {
     for (let i = 0; i < dataResult.rows.length; i++) {
       if (!dataResult.rows[i].category) {
-        // TODO: Check first in DB
         const category = await categorize(dataResult.rows[i]);
-        // TODO: Update in DB
+        await pool.query(
+          `UPDATE transacciones SET category = $1 WHERE "id_transacción" = $2`,
+          [category, dataResult.rows[i].id]
+        );
         dataResult.rows[i].category = category;
       }
     }
@@ -103,19 +105,26 @@ const getAllTransactions = async (query) => {
 const getTransactionById = async (id) => {
   const result = await pool.query(
     `
-    SELECT id, date, description, category, type, amount
-    FROM transactions
-    WHERE id = $1
+    SELECT "id_transacción" AS id, date, description, category, type, amount
+    FROM transacciones
+    WHERE "id_transacción" = $1
     `,
     [id]
   );
 
-  if (!result.rows[0].category) {
-    const category = await categorize(result.rows[0]);
-    // TODO: Update in DB
-    result.rows[0].category = category;
+  const transaction = result.rows[0];
+  if (!transaction) return null;
+
+  if (!transaction.category) {
+    const category = await categorize(transaction);
+    await pool.query(
+      `UPDATE transacciones SET category = $1 WHERE "id_transacción" = $2`,
+      [category, transaction.id]
+    );
+    transaction.category = category;
   }
-  return result.rows[0] || null;
+
+  return transaction;
 };
 
 module.exports = {

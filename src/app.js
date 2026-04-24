@@ -4,6 +4,8 @@ const transactionsRoutes = require("./routes/transactions.routes");
 const chatRoutes = require("./routes/chat.routes");
 const chatIA = require("./routes/IA.routes");
 const settingsRoutes = require("./routes/ajustes.routes");
+const inversionesRoutes = require("./routes/inversiones.routes");
+
 
 const app = express();
 
@@ -23,5 +25,7 @@ app.use("/api/transactions", transactionsRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ia", chatIA)
 app.use("/api/settings", settingsRoutes);
+app.use("/api/inversiones", inversionesRoutes);
+
 
 module.exports = app;
