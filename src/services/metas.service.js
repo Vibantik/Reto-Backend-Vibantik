@@ -1,5 +1,7 @@
 const { findMetasByUserUuid } = require("../repositories/metas.repository");
 const { createMeta } = require("../repositories/metas.repository");
+const { updateMetaByIdAndUser } = require("../repositories/metas.repository");
+const { deleteMetaByIdAndUser } = require("../repositories/metas.repository");
 
 function normalizeMeta(row) {
   const montoMeta = Number(row.monto_meta || 0);
@@ -14,7 +16,6 @@ function normalizeMeta(row) {
     fecha_inicio: row.fecha_inicio,
     fecha_fin: row.fecha_fin,
     plazo_dias: Number(row.plazo_dias || 0),
-    // Mantiene compatibilidad con clientes que ya consumen titulo.
     titulo: nombreMeta || `Meta ${row.id_meta}`,
     progreso,
   };
@@ -30,7 +31,19 @@ async function addMeta(input) {
   return normalizeMeta(row);
 }
 
+async function updateMetaById(input) {
+  const row = await updateMetaByIdAndUser(input);
+  if (!row) return null;
+  return normalizeMeta(row);
+}
+
+async function deleteMetaById(input) {
+  return deleteMetaByIdAndUser(input);
+}
+
 module.exports = {
   getMetasByUser,
   addMeta,
+  updateMetaById,
+  deleteMetaById,
 };

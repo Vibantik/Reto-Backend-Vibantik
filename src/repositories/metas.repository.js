@@ -39,7 +39,54 @@ async function createMeta({
   return rows[0];
 }
 
+async function updateMetaByIdAndUser({
+  idMeta,
+  uuidDeUsuario,
+  nombreMeta,
+  montoMeta,
+  fechaInicio,
+  fechaFin,
+  plazoDias,
+}) {
+  const query = `
+    UPDATE meta
+    SET "nombreMeta" = $1,
+        monto_meta = $2,
+        fecha_inicio = $3,
+        fecha_fin = $4,
+        plazo_dias = $5
+    WHERE id_meta = $6 AND uuid_de_usuario = $7
+    RETURNING id_meta, "nombreMeta" AS nombre_meta, plazo_dias, fecha_inicio, fecha_fin, monto_meta, uuid_de_usuario;
+  `;
+
+  const values = [
+    nombreMeta,
+    montoMeta,
+    fechaInicio,
+    fechaFin,
+    plazoDias,
+    idMeta,
+    uuidDeUsuario,
+  ];
+
+  const { rows } = await pool.query(query, values);
+  return rows[0] || null;
+}
+
+async function deleteMetaByIdAndUser({ idMeta, uuidDeUsuario }) {
+  const query = `
+    DELETE FROM meta
+    WHERE id_meta = $1 AND uuid_de_usuario = $2
+    RETURNING id_meta, "nombreMeta" AS nombre_meta, uuid_de_usuario;
+  `;
+
+  const { rows } = await pool.query(query, [idMeta, uuidDeUsuario]);
+  return rows[0] || null;
+}
+
 module.exports = {
   findMetasByUserUuid,
-  createMeta
+  createMeta,
+  updateMetaByIdAndUser,
+  deleteMetaByIdAndUser,
 };
