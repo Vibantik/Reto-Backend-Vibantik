@@ -5,6 +5,8 @@ const chatRoutes = require("./routes/chat.routes");
 const chatIA = require("./routes/IA.routes");
 const settingsRoutes = require("./routes/ajustes.routes");
 const inversionesRoutes = require("./routes/inversiones.routes");
+const categoriasRoutes = require("./routes/categorias.routes");
+const presupuestosRoutes = require("./routes/presupuestos.routes");
 
 
 const app = express();
@@ -26,6 +28,8 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/ia", chatIA)
 app.use("/api/settings", settingsRoutes);
 app.use("/api/inversiones", inversionesRoutes);
+app.use("/api/categorias", categoriasRoutes);
+app.use("/api/presupuestos", presupuestosRoutes);
 
 
 module.exports = app;
