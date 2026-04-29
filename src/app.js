@@ -7,6 +7,8 @@ const settingsRoutes = require("./routes/ajustes.routes");
 const inversionesRoutes = require("./routes/inversiones.routes");
 const categoriasRoutes = require("./routes/categorias.routes");
 const presupuestosRoutes = require("./routes/presupuestos.routes");
+const metasRoutes = require("./routes/metas.routes");
+const webhookRoutes = require("./routes/webhook.routes");
 
 
 const app = express();
@@ -20,7 +22,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// TODO: Return latency in JSON
 app.get("/api/ping", (req, res) => { res.send("Pong!") });
 
 app.use("/api/transactions", transactionsRoutes);
@@ -30,6 +31,8 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/inversiones", inversionesRoutes);
 app.use("/api/categorias", categoriasRoutes);
 app.use("/api/presupuestos", presupuestosRoutes);
+app.use("/api", metasRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 
 module.exports = app;
