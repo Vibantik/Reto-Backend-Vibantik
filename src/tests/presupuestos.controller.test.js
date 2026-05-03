@@ -27,7 +27,10 @@ jest.mock("../services/transactions_categorization.service", () => jest.fn());
 // mocj presupuestos
 jest.mock("../services/presupuestos.service", () => ({
   getAllPresupuestos:    jest.fn(),
+<<<<<<< HEAD
   getLatestPresupuesto:  jest.fn(),
+=======
+>>>>>>> adea2d3 (test presupuestos)
   getPresupuestoById:   jest.fn(),
   createPresupuesto:    jest.fn(),
   updatePresupuesto:    jest.fn(),
@@ -65,6 +68,7 @@ describe("HU-01 | CP-10 (CA0110) – GET /api/presupuestos sin uuid", () => {
   });
 });
 
+<<<<<<< HEAD
 describe("HU-01 | Contexto del wizard – GET /api/presupuestos/last-month", () => {
   test("responde HTTP 400 cuando falta uuid", async () => {
     const res = await request(app).get("/api/presupuestos/last-month");
@@ -101,6 +105,8 @@ describe("HU-01 | Contexto del wizard – GET /api/presupuestos/last-month", () 
   });
 });
 
+=======
+>>>>>>> adea2d3 (test presupuestos)
 //  HU-02 | CP-12 (CA0214)
 //  Prueba de contrato API: POST /api/presupuestos con payload inválido → 400
 describe("HU-02 | CP-12 (CA0214) – POST /api/presupuestos validación de entrada", () => {
