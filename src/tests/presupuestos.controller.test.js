@@ -27,6 +27,7 @@ jest.mock("../services/transactions_categorization.service", () => jest.fn());
 // mocj presupuestos
 jest.mock("../services/presupuestos.service", () => ({
   getAllPresupuestos:    jest.fn(),
+  getLatestPresupuesto:  jest.fn(),
   getPresupuestoById:   jest.fn(),
   createPresupuesto:    jest.fn(),
   updatePresupuesto:    jest.fn(),
@@ -61,6 +62,42 @@ describe("HU-01 | CP-10 (CA0110) – GET /api/presupuestos sin uuid", () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body).toHaveLength(1);
+  });
+});
+
+describe("HU-01 | Contexto del wizard – GET /api/presupuestos/last-month", () => {
+  test("responde HTTP 400 cuando falta uuid", async () => {
+    const res = await request(app).get("/api/presupuestos/last-month");
+
+    expect(res.status).toBe(400);
+    expect(res.body.message.toLowerCase()).toMatch(/uuid/);
+  });
+
+  test("responde HTTP 404 cuando no existe presupuesto previo", async () => {
+    presupuestosService.getLatestPresupuesto.mockResolvedValue(null);
+
+    const res = await request(app).get(
+      "/api/presupuestos/last-month?uuid=test-uuid-1234"
+    );
+
+    expect(res.status).toBe(404);
+  });
+
+  test("responde HTTP 200 con el ultimo presupuesto cuando existe", async () => {
+    presupuestosService.getLatestPresupuesto.mockResolvedValue({
+      id_presupuesto: 8,
+      nombre: "Abril",
+      monto_limite: 3500,
+      categorias: [],
+      transacciones: [],
+    });
+
+    const res = await request(app).get(
+      "/api/presupuestos/last-month?uuid=test-uuid-1234"
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.id_presupuesto).toBe(8);
   });
 });
 
