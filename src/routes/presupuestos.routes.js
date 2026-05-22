@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getPresupuestos,
+  getLastPresupuesto,
   getPresupuesto,
   createPresupuesto,
   updatePresupuesto,
@@ -11,6 +12,7 @@ const {
 const router = express.Router();
 
 router.get("/", getPresupuestos);
+router.get("/last-month", getLastPresupuesto);
 router.get("/:id", getPresupuesto);
 router.post("/", createPresupuesto);
 router.put("/:id", updatePresupuesto);

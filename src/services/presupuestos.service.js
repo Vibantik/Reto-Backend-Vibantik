@@ -32,6 +32,25 @@ const getAllPresupuestos = async (uuid, { soloActivos = false } = {}) => {
   return result.rows;
 };
 
+const getLatestPresupuesto = async (uuid) => {
+  const result = await pool.query(
+    `
+      SELECT id_presupuesto
+      FROM presupuesto
+      WHERE uuid_de_usuario = $1
+      ORDER BY inicio DESC, updated_at DESC
+      LIMIT 1
+    `,
+    [uuid]
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return getPresupuestoById(result.rows[0].id_presupuesto);
+};
+
 //Detalle de un presupuesto con sus categorías asignadas y transacciones vinculadas
 const getPresupuestoById = async (id) => {
   // Presupuesto base
@@ -211,6 +230,7 @@ const vincularTransaccion = async (idPresupuesto, idTransaccion) => {
 
 module.exports = {
   getAllPresupuestos,
+  getLatestPresupuesto,
   getPresupuestoById,
   createPresupuesto,
   updatePresupuesto,
