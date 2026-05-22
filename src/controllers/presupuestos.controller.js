@@ -1,5 +1,6 @@
 const {
   getAllPresupuestos,
+  getLatestPresupuesto,
   getPresupuestoById,
   createPresupuesto: createPresupuestoService,
   updatePresupuesto: updatePresupuestoService,
@@ -18,6 +19,25 @@ const getPresupuestos = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error("Error al obtener presupuestos:", error.message || error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+const getLastPresupuesto = async (req, res) => {
+  try {
+    const uuid = req.query.uuid;
+    if (!uuid) {
+      return res.status(400).json({ message: "uuid es requerido" });
+    }
+
+    const presupuesto = await getLatestPresupuesto(uuid);
+    if (!presupuesto) {
+      return res.status(404).json({ message: "No se encontro un presupuesto previo" });
+    }
+
+    res.status(200).json(presupuesto);
+  } catch (error) {
+    console.error("Error al obtener el ultimo presupuesto:", error.message || error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
@@ -101,6 +121,7 @@ const vincularTransaccion = async (req, res) => {
 
 module.exports = {
   getPresupuestos,
+  getLastPresupuesto,
   getPresupuesto,
   createPresupuesto,
   updatePresupuesto,
