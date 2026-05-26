@@ -10,6 +10,7 @@ const presupuestosRoutes = require("./routes/presupuestos.routes");
 const metasRoutes = require("./routes/metas.routes");
 const webhookRoutes = require("./routes/webhook.routes");
 const reportesRoutes = require("./routes/reportes.routes");
+const usersRoutes = require("./routes/users.routes");
 
 
 const app = express();
@@ -35,6 +36,7 @@ app.use("/api/presupuestos", presupuestosRoutes);
 app.use("/api", metasRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/reportes", reportesRoutes);
+app.use("/api/users", usersRoutes);
 
 
 module.exports = app;

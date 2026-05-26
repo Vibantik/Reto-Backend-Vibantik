@@ -10,7 +10,7 @@ const pool = new Pool({
   port: process.env.DB_PORT,
   ssl: {
     rejectUnauthorized: true,
-    ca: fs.readFileSync(path.join(__dirname, '..', 'ca.pem')).toString(),
+    ca: process.env.DB_CA_CERT,
   },
 });
 

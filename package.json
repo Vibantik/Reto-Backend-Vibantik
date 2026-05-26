@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "infisical:dev": "infisical run -- npm run dev",
+    "infisical:login": "infisical login",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/src/tests/**/*.test.js"]
   },
   "keywords": [],
   "author": "",
@@ -19,6 +26,9 @@
     "pg": "^8.20.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@infisical/cli": "^0.43.84",
+    "nodemon": "^3.1.14",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
   }
 }

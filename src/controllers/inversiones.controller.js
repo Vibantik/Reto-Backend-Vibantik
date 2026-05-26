@@ -2,6 +2,7 @@
 const {
   getAllInversiones,
   getInversionById: getInversionByIdService,
+  getInversionesByUser: getInversionesByUserService
 } = require("../services/inversiones.service");
 
 const getInversiones = async (req, res) => {
@@ -10,6 +11,20 @@ const getInversiones = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error("Error al obtener inversiones:", error.message || error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+const getInversionesByUser = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    if (!uuid) {
+      return res.status(400).json({ message: "uuid es requerido" });
+    }
+    const result = await getInversionesByUserService(uuid);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error al obtener inversiones por usuario:", error.message || error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
@@ -27,4 +42,4 @@ const getInversionById = async (req, res) => {
   }
 };
 
-module.exports = { getInversiones, getInversionById };
+module.exports = { getInversiones, getInversionesByUser, getInversionById };
