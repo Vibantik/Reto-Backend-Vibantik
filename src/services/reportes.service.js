@@ -1,5 +1,6 @@
 // src/services/reportes.service.js
 const pool = require("../connect");
+const { chat } = require("./ai-provider");
  
 // Trae todas las transacciones de un mes/año específico
 const getTransaccionesMes = async (anio, mes) => {
@@ -64,11 +65,8 @@ const buildReporteEstandar = (transacciones, anio, mes) => {
   };
 };
  
-// Llama a Ollama para el análisis IA
+// Llama a la IA para el análisis (Ollama o Gemini según AI_PROVIDER)
 const getAnalisisIA = async (reporte) => {
-  const OLLAMA_URL = process.env.OLLAMA_URL + "api/chat";
-  const MODEL      = process.env.MODEL;
- 
   const { periodo, resumen, categorias } = reporte;
  
   const catResumen = categorias
@@ -99,21 +97,8 @@ Responde en español con el siguiente formato JSON (sin markdown, solo JSON):
   ],
   "proyeccion": "Qué podría mejorar o empeorar el próximo mes si sigue igual"
 }`;
- 
-  const ollamaRes = await fetch(OLLAMA_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: "user", content: prompt }],
-      stream: false,
-    }),
-  });
- 
-  if (!ollamaRes.ok) throw new Error("Error conectando a Ollama");
- 
-  const data = await ollamaRes.json();
-  const content = data.message?.content || "";
+
+  const content = await chat([{ role: "user", content: prompt }]);
  
   // Extrae el JSON de la respuesta
   const match = content.match(/\{[\s\S]*\}/);
