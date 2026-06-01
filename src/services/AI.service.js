@@ -9,6 +9,7 @@ const {
   shouldRouteToGenerativeUITooling,
 } = require("./agentic/legacy-finance-router");
 const { runFinanceAgentRuntime } = require("./agentic/adk-runtime");
+const { planConfirmableAction } = require("./agentic/agent-actions.service");
 
 const GEMINI_API = getGeminiApiKey();
 const GEMINI_MODEL = getGeminiModel();
@@ -20,6 +21,11 @@ const planAgenticResponse = async (messages = [], requestContext = {}) => {
 
   if (!lastUserMessage) {
     return null;
+  }
+
+  const actionProposal = planConfirmableAction(messages, requestContext);
+  if (actionProposal) {
+    return actionProposal;
   }
 
   if (shouldRouteToGenerativeUITooling(lastUserMessage)) {

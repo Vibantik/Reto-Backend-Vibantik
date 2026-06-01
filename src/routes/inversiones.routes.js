@@ -10,7 +10,7 @@ const {
 const router = express.Router();
 
 router.get("/", getInversiones);
-router.get("/:id", getInversionById);
 router.get("/u/:uuid", getInversionesByUser);
+router.get("/:id", getInversionById);
 
 module.exports = router;

@@ -56,6 +56,34 @@ describe("AI.service | planAgenticResponse", () => {
     });
   });
 
+  test("devuelve action_proposal cuando puede crear una meta con confirmacion", async () => {
+    const { planAgenticResponse } = loadAIService();
+
+    const result = await planAgenticResponse(
+      [
+        {
+          role: "user",
+          content: "crea una meta de ahorro de 5000 para vacaciones en 90 dias",
+        },
+      ],
+      { userUuid: "user-1" }
+    );
+
+    expect(result).toMatchObject({
+      type: "action_proposal",
+      data: {
+        tool: "crear_meta",
+        module: "metas",
+        params: {
+          nombreMeta: "vacaciones",
+          monto_meta: 5000,
+          plazo_dias: 90,
+        },
+      },
+    });
+    expect(result.data.confirmation_token).toEqual(expect.any(String));
+  });
+
   test("no devuelve tool cuando la consulta no es de presupuesto", async () => {
     const { planAgenticResponse } = loadAIService();
 
