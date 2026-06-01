@@ -13,22 +13,29 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/src/tests/**/*.test.js"]
+    "testMatch": [
+      "**/src/tests/**/*.test.js"
+    ]
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/adk": "^0.1.2",
+    "@google/genai": "^1.14.0",
+    "@modelcontextprotocol/sdk": "^1.17.5",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "uuid": "^11.1.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@infisical/cli": "^0.43.84",
-    "nodemon": "^3.1.14",
     "jest": "^30.3.0",
+    "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
   }
 }
