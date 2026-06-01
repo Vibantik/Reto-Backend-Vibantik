@@ -18,6 +18,37 @@ const startChatbot = async (req, res) => {
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: "messages es requerido" });
+    const {
+      messages,
+      uuid_de_usuario,
+      conversation_id,
+      agent_preferences,
+    } = req.body;
+
+    const toolPlan = await planAgenticResponse(messages, {
+      userUuid: uuid_de_usuario || null,
+      conversationId: conversation_id || null,
+      agentPreferences: agent_preferences || {},
+    });
+
+    if (toolPlan) {
+      res.setHeader("Content-Type", "application/x-ndjson");
+      if (toolPlan.type === "assistant_text") {
+        res.write(
+          `${JSON.stringify({
+            type: "assistant_text",
+            message: {
+              role: "assistant",
+              content: toolPlan.message?.content || "",
+            },
+            done: true,
+            meta: toolPlan.meta || {},
+          })}\n`
+        );
+      } else {
+        res.write(`${JSON.stringify(toolPlan)}\n`);
+      }
+      return res.end();
     }
 
     // Intentar detección agentic con el nuevo orchestrator universal
