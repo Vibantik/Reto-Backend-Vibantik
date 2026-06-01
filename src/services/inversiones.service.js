@@ -52,4 +52,34 @@ const getInversionById = async (id) => {
   return result.rows[0] || null;
 };
 
-module.exports = { getAllInversiones, getInversionesByUser, getInversionById };
+const createInversion = async ({ uuidDeUsuario, nombre, valor, fechaInicio, fechaFin, idTipo }) => {
+  const result = await pool.query(
+    `INSERT INTO inversiones (uuid_de_usuario, nombre, valor, fecha_inicio, fecha_fin, id_tipo)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING
+       "id_inversión",
+       nombre,
+       valor,
+       fecha_inicio,
+       fecha_fin,
+       id_tipo`,
+    [uuidDeUsuario, nombre, valor, fechaInicio, fechaFin, idTipo || null]
+  );
+
+  const row = result.rows[0];
+
+  // Obtener el nombre del tipo si existe
+  if (row.id_tipo) {
+    const tipoResult = await pool.query(
+      `SELECT nombre FROM tipo_inversiones WHERE "id_tipo_inversión" = $1`,
+      [row.id_tipo]
+    );
+    row.tipo = tipoResult.rows[0]?.nombre || null;
+  } else {
+    row.tipo = null;
+  }
+
+  return row;
+};
+
+module.exports = { getAllInversiones, getInversionesByUser, getInversionById, createInversion };
