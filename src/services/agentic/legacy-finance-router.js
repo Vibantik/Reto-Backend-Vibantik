@@ -19,16 +19,80 @@ const TOOL_DEFINITIONS = [
           type: "number",
           description: "Porcentaje de ahorro sugerido a partir del mensaje del usuario.",
         },
+        source: {
+          type: "string",
+          description: "Origen del enrutamiento del wizard.",
+        },
+      },
+      required: ["intent"],
+    },
+  },
+  {
+    name: "generate_goal_wizard",
+    description:
+      "Muestra un asistente para crear o ajustar una meta de ahorro o ahorro específico sin guardar datos hasta que el usuario confirme.",
+    parameters: {
+      type: "object",
+      properties: {
+        intent: {
+          type: "string",
+          description: "Objetivo principal del usuario al crear o ajustar una meta.",
+        },
+        categoryHint: {
+          type: "string",
+          description: "Categoria o contexto de la meta si existe.",
+        },
+        savingsGoalPercent: {
+          type: "number",
+          description: "Porcentaje de ahorro sugerido asociado con la meta.",
+        },
+        source: {
+          type: "string",
+          description: "Origen del enrutamiento del wizard.",
+        },
+      },
+      required: ["intent"],
+    },
+  },
+  {
+    name: "generate_investment_wizard",
+    description:
+      "Muestra un asistente para crear o ajustar una inversion sin guardar datos hasta que el usuario confirme.",
+    parameters: {
+      type: "object",
+      properties: {
+        intent: {
+          type: "string",
+          description: "Objetivo principal del usuario al crear o ajustar una inversion.",
+        },
+        categoryHint: {
+          type: "string",
+          description: "Tipo de inversion o contexto si existe.",
+        },
+        savingsGoalPercent: {
+          type: "number",
+          description: "Porcentaje de ahorro o monto sugerido relacionado con la inversion.",
+        },
+        source: {
+          type: "string",
+          description: "Origen del enrutamiento del wizard.",
+        },
       },
       required: ["intent"],
     },
   },
 ];
 
-// Wizzar q solo se activa PARA PRESUPUESTOS!!!
+// Wizzar q se activa para presupuestos, metas e inversiones
 const WIZARD_SUBJECTS = [
   "presupuesto",
   "budget",
+  "meta",
+  "metas",
+  "inversion",
+  "inversiones",
+  "ahorro",
+  "ahorros",
 ];
 
 // Action verbs para presupuesto
@@ -155,6 +219,36 @@ const buildBudgetToolPayload = (args = {}, source = "heuristic") => ({
   },
 });
 
+const buildGoalToolPayload = (args = {}, source = "heuristic") => ({
+  type: "ui_tool",
+  tool: "generate_goal_wizard",
+  data: {
+    intent: args.intent || "create_goal",
+    categoryHint: args.categoryHint || null,
+    savingsGoalPercent: Number(args.savingsGoalPercent || 10),
+    source,
+  },
+  message: {
+    content:
+      "Prepare un asistente para crear o ajustar una meta de ahorro sin guardar nada hasta que lo confirme.",
+  },
+});
+
+const buildInvestmentToolPayload = (args = {}, source = "heuristic") => ({
+  type: "ui_tool",
+  tool: "generate_investment_wizard",
+  data: {
+    intent: args.intent || "create_investment",
+    categoryHint: args.categoryHint || null,
+    savingsGoalPercent: Number(args.savingsGoalPercent || 10),
+    source,
+  },
+  message: {
+    content:
+      "Prepare un asistente para crear o ajustar una inversion sin guardar nada hasta que lo confirme.",
+  },
+});
+
 const buildTextAgenticResponse = (content, source = "adk") => ({
   type: "assistant_text",
   message: {
@@ -165,13 +259,43 @@ const buildTextAgenticResponse = (content, source = "adk") => ({
   },
 });
 
-const inferBudgetIntent = (lastUserMessage = "") => {
+const inferWizardIntent = (lastUserMessage = "") => {
   const normalized = normalizeText(lastUserMessage);
   if (!shouldRouteToGenerativeUITooling(normalized)) return null;
 
   const categoryHint =
     CATEGORY_HINTS.find((category) => normalized.includes(category)) || null;
   const savingsGoalPercent = extractSavingsGoalPercent(normalized) || 10;
+
+  if (/\bmeta\b|\bmetas\b|\bahorro\b|\bahorros\b/.test(normalized)) {
+    return buildGoalToolPayload(
+      {
+        intent: normalized.includes("reduc")
+          ? "reduce_savings_goal"
+          : normalized.includes("ahorr")
+            ? "increase_savings_goal"
+            : "create_goal",
+        categoryHint,
+        savingsGoalPercent,
+      },
+      "heuristic"
+    );
+  }
+
+  if (/\binversion\b|\binversiones\b|\bportafolio\b/.test(normalized)) {
+    return buildInvestmentToolPayload(
+      {
+        intent: normalized.includes("reduc")
+          ? "reduce_investment"
+          : normalized.includes("ahorr")
+            ? "allocate_investment"
+            : "create_investment",
+        categoryHint,
+        savingsGoalPercent,
+      },
+      "heuristic"
+    );
+  }
 
   return buildBudgetToolPayload(
     {
@@ -222,7 +346,7 @@ const callGeminiToolRouter = async (messages = []) => {
         parts: [
           {
             text:
-              "Eres el router de UI generativa de Vibantik. Llama generate_budget_wizard unicamente cuando el usuario quiera crear, planear, ajustar o reducir un presupuesto. No guardes datos ni ejecutes acciones; solo devuelve la llamada de herramienta con argumentos seguros.",
+              "Eres el router de UI generativa de Vibantik. Llama generate_budget_wizard, generate_goal_wizard o generate_investment_wizard unicamente cuando el usuario quiera crear, planear, ajustar o reducir un presupuesto, una meta o una inversion. No guardes datos ni ejecutes acciones; solo devuelve la llamada de herramienta con argumentos seguros.",
           },
         ],
       },
@@ -249,11 +373,23 @@ const callGeminiToolRouter = async (messages = []) => {
   const parts = geminiJson?.candidates?.[0]?.content?.parts || [];
   const functionCall = parts.find((part) => part.functionCall)?.functionCall;
 
-  if (functionCall?.name !== "generate_budget_wizard") {
+  if (!functionCall) {
     return null;
   }
 
-  return buildBudgetToolPayload(functionCall.args || {}, "gemini");
+  if (functionCall.name === "generate_budget_wizard") {
+    return buildBudgetToolPayload(functionCall.args || {}, "gemini");
+  }
+
+  if (functionCall.name === "generate_goal_wizard") {
+    return buildGoalToolPayload(functionCall.args || {}, "gemini");
+  }
+
+  if (functionCall.name === "generate_investment_wizard") {
+    return buildInvestmentToolPayload(functionCall.args || {}, "gemini");
+  }
+
+  return null;
 };
 
 const planLegacyBudgetWizardResponse = async (messages = []) => {
@@ -274,7 +410,7 @@ const planLegacyBudgetWizardResponse = async (messages = []) => {
     console.error("Gemini tool routing error:", error.message || error);
   }
 
-  return inferBudgetIntent(lastUserMessage);
+  return inferWizardIntent(lastUserMessage);
 };
 
 module.exports = {

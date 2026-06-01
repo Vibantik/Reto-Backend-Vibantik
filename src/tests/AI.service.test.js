@@ -38,6 +38,24 @@ describe("AI.service | planAgenticResponse", () => {
     });
   });
 
+  test("devuelve un ui_tool de meta cuando el usuario quiere crear una meta de ahorro", async () => {
+    const { planAgenticResponse } = loadAIService();
+
+    const result = await planAgenticResponse([
+      { role: "user", content: "Quiero crear una meta de ahorro para viajes en 3 meses" },
+    ]);
+
+    expect(result).toMatchObject({
+      type: "ui_tool",
+      tool: "generate_goal_wizard",
+      data: {
+        intent: "increase_savings_goal",
+        categoryHint: "viajes",
+        source: "heuristic",
+      },
+    });
+  });
+
   test("no devuelve tool cuando la consulta no es de presupuesto", async () => {
     const { planAgenticResponse } = loadAIService();
 

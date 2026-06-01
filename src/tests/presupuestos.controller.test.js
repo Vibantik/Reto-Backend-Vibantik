@@ -27,6 +27,7 @@ jest.mock("../services/transactions_categorization.service", () => jest.fn());
 // mocj presupuestos
 jest.mock("../services/presupuestos.service", () => ({
   getAllPresupuestos:    jest.fn(),
+  getLatestPresupuesto: jest.fn(),
   getPresupuestoById:   jest.fn(),
   createPresupuesto:    jest.fn(),
   updatePresupuesto:    jest.fn(),
