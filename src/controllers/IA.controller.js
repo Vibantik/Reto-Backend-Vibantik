@@ -8,13 +8,36 @@ const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT_CHATINIT;
 
 const startChatbot = async (req, res) => {
   try {
-    const { messages } = req.body; 
-    
-    const toolPlan = await planAgenticResponse(messages);
+    const {
+      messages,
+      uuid_de_usuario,
+      conversation_id,
+      agent_preferences,
+    } = req.body;
+
+    const toolPlan = await planAgenticResponse(messages, {
+      userUuid: uuid_de_usuario || null,
+      conversationId: conversation_id || null,
+      agentPreferences: agent_preferences || {},
+    });
 
     if (toolPlan) {
       res.setHeader("Content-Type", "application/x-ndjson");
-      res.write(`${JSON.stringify(toolPlan)}\n`);
+      if (toolPlan.type === "assistant_text") {
+        res.write(
+          `${JSON.stringify({
+            type: "assistant_text",
+            message: {
+              role: "assistant",
+              content: toolPlan.message?.content || "",
+            },
+            done: true,
+            meta: toolPlan.meta || {},
+          })}\n`
+        );
+      } else {
+        res.write(`${JSON.stringify(toolPlan)}\n`);
+      }
       return res.end();
     }
 
