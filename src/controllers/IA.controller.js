@@ -1,4 +1,4 @@
-const { chatStream } = require("../services/ai-provider");
+const { chat } = require("../services/ai-provider");
 const { planAgenticResponse } = require("../services/AI.service");
 
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT_CHATINIT;
@@ -46,7 +46,36 @@ const startChatbot = async (req, res) => {
       ...messages,
     ];
 
-    await chatStream(fullMessages, res);
+    const rawText = await chat(fullMessages);
+
+    let responseChunk;
+    try {
+      const parsed = JSON.parse(rawText);
+      if (parsed.componente_ui) {
+        responseChunk = {
+          type: "ui_tool",
+          tool: parsed.componente_ui,
+          data: parsed.datos_ui || {},
+          message: { content: parsed.mensaje_texto || "" },
+        };
+      } else {
+        responseChunk = {
+          type: "assistant_text",
+          message: { role: "assistant", content: parsed.mensaje_texto || rawText },
+          done: true,
+        };
+      }
+    } catch {
+      responseChunk = {
+        type: "assistant_text",
+        message: { role: "assistant", content: rawText },
+        done: true,
+      };
+    }
+
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.write(`${JSON.stringify(responseChunk)}\n`);
+    return res.end();
 
   } catch (error) {
       console.error("Error en IA controller:", error);

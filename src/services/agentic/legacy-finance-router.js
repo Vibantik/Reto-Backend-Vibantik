@@ -1,3 +1,4 @@
+
 const TOOL_DEFINITIONS = [
   {
     name: "generate_budget_wizard",
@@ -52,10 +53,14 @@ const WIZARD_ACTION_VERBS = [
   "organizar",
   "iniciar",
   "inicia",
+  "ayuda",
+  "ayudame",
+  "hacer",
+  "haz",
+  "quiero",
 ];
 
 // Palabras y terminos de finanzas para routear a ADK
-// "gasto"/"gastos" excluido para que se vayan a chatStream 
 const FINANCE_SUBJECTS = [
   "meta", "metas",
   "inversion", "inversiones",
@@ -65,6 +70,7 @@ const FINANCE_SUBJECTS = [
   "ingreso", "ingresos",
   "portafolio",
   "rendimiento",
+  "gasto", "gastos",
 ];
 
 // "crear"/"nueva"/"nuevo"/"agregar" para metas/inversiones, sino esto como flag de finanzas personales

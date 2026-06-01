@@ -13,14 +13,7 @@ const { runFinanceAgentRuntime } = require("./agentic/adk-runtime");
 const GEMINI_API = getGeminiApiKey();
 const GEMINI_MODEL = getGeminiModel();
 
-const isFinanceAgentEnabled = (requestContext = {}) =>
-  Boolean(requestContext?.agentPreferences?.enable_finance_agent);
-
 const planAgenticResponse = async (messages = [], requestContext = {}) => {
-  if (!isFinanceAgentEnabled(requestContext)) {
-    return null;
-  }
-
   const lastUserMessage = [...messages]
     .reverse()
     .find((message) => message?.role === "user" && message?.content)?.content;
