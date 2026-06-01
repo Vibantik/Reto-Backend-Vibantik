@@ -11,7 +11,6 @@ const metasRoutes = require("./routes/metas.routes");
 const webhookRoutes = require("./routes/webhook.routes");
 const reportesRoutes = require("./routes/reportes.routes");
 const usersRoutes = require("./routes/users.routes");
-const agentRoutes = require("./routes/agent.routes");
 
 
 const app = express();
@@ -29,7 +28,6 @@ app.get("/api/ping", (req, res) => { res.send("Pong!") });
 
 app.use("/api/transactions", transactionsRoutes);
 app.use("/api/chat", chatRoutes);
-app.use("/api/agent", agentRoutes);
 app.use("/api/ia", chatIA)
 app.use("/api/settings", settingsRoutes);
 app.use("/api/inversiones", inversionesRoutes);
