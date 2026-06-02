@@ -11,6 +11,7 @@ const metasRoutes = require("./routes/metas.routes");
 const webhookRoutes = require("./routes/webhook.routes");
 const reportesRoutes = require("./routes/reportes.routes");
 const usersRoutes = require("./routes/users.routes");
+const agentRoutes = require("./routes/agent.routes");
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api", metasRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/reportes", reportesRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/agent", agentRoutes);
 
 
 module.exports = app;

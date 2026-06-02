@@ -1,13 +1,15 @@
 const pool = require("../connect");
+
 const {
   TOOL_DEFINITIONS,
   getGeminiApiKey,
   getGeminiModel,
   buildTextAgenticResponse,
-  planLegacyBudgetWizardResponse,
+  planLegacyFinanceWizardResponse,
   shouldHandleFinanceIntent,
   shouldRouteToGenerativeUITooling,
 } = require("./agentic/legacy-finance-router");
+
 const { runFinanceAgentRuntime } = require("./agentic/adk-runtime");
 
 const GEMINI_API = getGeminiApiKey();
@@ -26,36 +28,54 @@ const planAgenticResponse = async (messages = [], requestContext = {}) => {
   }
 
   const routeToWizard = shouldRouteToGenerativeUITooling(lastUserMessage);
-  console.log("[planAgenticResponse] shouldRouteToGenerativeUITooling:", routeToWizard);
+
+  console.log(
+    "[planAgenticResponse] shouldRouteToGenerativeUITooling:",
+    routeToWizard
+  );
+
   if (routeToWizard) {
-    console.log("[planAgenticResponse] → budget wizard path");
-    return planLegacyBudgetWizardResponse(messages);
+    console.log("[planAgenticResponse] → finance wizard path");
+    return planLegacyFinanceWizardResponse(messages);
   }
 
   const handleFinance = shouldHandleFinanceIntent(lastUserMessage);
+
   console.log("[planAgenticResponse] shouldHandleFinanceIntent:", handleFinance);
+
   if (!handleFinance) {
-    console.log("[planAgenticResponse] → null (no finance intent detected, will fall through to chat/Ollama)");
+    console.log(
+      "[planAgenticResponse] → null (no finance intent detected, will fall through to chat/Ollama)"
+    );
+
     return null;
   }
 
   console.log("[planAgenticResponse] → ADK finance agent path");
+
   try {
     const adkResponse = await runFinanceAgentRuntime({
       messages,
       requestContext,
     });
 
-    console.log("[planAgenticResponse] ADK response:", adkResponse ? `type=${adkResponse.type}` : "null/undefined");
+    console.log(
+      "[planAgenticResponse] ADK response:",
+      adkResponse ? `type=${adkResponse.type}` : "null/undefined"
+    );
+
     if (adkResponse) {
       return adkResponse;
     }
   } catch (error) {
-    console.error("[planAgenticResponse] ADK finance runtime error:", error.message || error);
+    console.error(
+      "[planAgenticResponse] ADK finance runtime error:",
+      error.message || error
+    );
   }
 
-  // ADK no disponible y evitar alucionaciones
   console.log("[planAgenticResponse] → fallback text (ADK returned null or failed)");
+
   return buildTextAgenticResponse(
     "Para consultar información detallada de tus finanzas personales, revisa las secciones de Gastos, Presupuestos o Metas en la app.",
     "fallback"
@@ -69,10 +89,12 @@ const Imagesave = async (id_msj, imagenOCR) => {
 
   const query = `
     INSERT INTO Imagen (texto_extraido_ocr, id_msj)
-    VALUES (imagenOCR, id_msj)
+    VALUES ($1, $2)
     RETURNING id_imagen;
   `;
-  const result = await pool.query(query, [id_msj, imagenOCR]);
+
+  const result = await pool.query(query, [imagenOCR, id_msj]);
+
   return result.rows[0].id_imagen;
 };
 
