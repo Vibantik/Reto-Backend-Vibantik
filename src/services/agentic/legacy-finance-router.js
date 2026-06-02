@@ -1,4 +1,3 @@
-
 const TOOL_DEFINITIONS = [
   {
     name: "generate_budget_wizard",
@@ -17,7 +16,8 @@ const TOOL_DEFINITIONS = [
         },
         savingsGoalPercent: {
           type: "number",
-          description: "Porcentaje de ahorro sugerido a partir del mensaje del usuario.",
+          description:
+            "Porcentaje de ahorro sugerido a partir del mensaje del usuario.",
         },
         source: {
           type: "string",
@@ -30,48 +30,25 @@ const TOOL_DEFINITIONS = [
   {
     name: "generate_goal_wizard",
     description:
-      "Muestra un asistente para crear o ajustar una meta de ahorro o ahorro específico sin guardar datos hasta que el usuario confirme.",
+      "Muestra un widget interactivo para crear una meta de ahorro sin guardar datos hasta que el usuario confirme.",
     parameters: {
       type: "object",
       properties: {
         intent: {
           type: "string",
-          description: "Objetivo principal del usuario al crear o ajustar una meta.",
+          description: "Objetivo principal del usuario al crear la meta.",
         },
-        categoryHint: {
+        goalNameHint: {
           type: "string",
-          description: "Categoria o contexto de la meta si existe.",
+          description: "Nombre o proposito de la meta mencionado por el usuario.",
         },
-        savingsGoalPercent: {
+        targetAmount: {
           type: "number",
-          description: "Porcentaje de ahorro sugerido asociado con la meta.",
+          description: "Monto objetivo detectado si el usuario lo menciona.",
         },
-        source: {
+        deadlineHint: {
           type: "string",
-          description: "Origen del enrutamiento del wizard.",
-        },
-      },
-      required: ["intent"],
-    },
-  },
-  {
-    name: "generate_investment_wizard",
-    description:
-      "Muestra un asistente para crear o ajustar una inversion sin guardar datos hasta que el usuario confirme.",
-    parameters: {
-      type: "object",
-      properties: {
-        intent: {
-          type: "string",
-          description: "Objetivo principal del usuario al crear o ajustar una inversion.",
-        },
-        categoryHint: {
-          type: "string",
-          description: "Tipo de inversion o contexto si existe.",
-        },
-        savingsGoalPercent: {
-          type: "number",
-          description: "Porcentaje de ahorro o monto sugerido relacionado con la inversion.",
+          description: "Fecha o plazo mencionado por el usuario.",
         },
         source: {
           type: "string",
@@ -83,19 +60,23 @@ const TOOL_DEFINITIONS = [
   },
 ];
 
-// Wizzar q se activa para presupuestos, metas e inversiones
-const WIZARD_SUBJECTS = [
+const BUDGET_WIZARD_SUBJECTS = [
   "presupuesto",
+  "presupuestos",
   "budget",
+];
+
+const GOAL_WIZARD_SUBJECTS = [
   "meta",
   "metas",
-  "inversion",
-  "inversiones",
+  "objetivo",
+  "objetivos",
   "ahorro",
   "ahorros",
+  "ahorrar",
 ];
 
-// Action verbs para presupuesto
+// Verbos que indican que el usuario quiere crear/planear/ajustar algo.
 const WIZARD_ACTION_VERBS = [
   "planear",
   "planifica",
@@ -124,21 +105,31 @@ const WIZARD_ACTION_VERBS = [
   "quiero",
 ];
 
-// Palabras y terminos de finanzas para routear a ADK
+// Palabras y terminos de finanzas para routear al ADK cuando NO sea wizard.
 const FINANCE_SUBJECTS = [
-  "meta", "metas",
-  "inversion", "inversiones", "invertir", "invirtiendo",
-  "ahorro", "ahorros", "ahorrar",
+  "meta",
+  "metas",
+  "inversion",
+  "inversiones",
+  "invertir",
+  "invirtiendo",
+  "ahorro",
+  "ahorros",
+  "ahorrar",
   "presupuesto",
+  "presupuestos",
   "saldo",
-  "ingreso", "ingresos",
+  "ingreso",
+  "ingresos",
   "portafolio",
   "rendimiento",
-  "gasto", "gastos",
+  "gasto",
+  "gastos",
 ];
 
-// "crear"/"nueva"/"nuevo"/"agregar" para metas/inversiones, sino esto como flag de finanzas personales
-const PERSONAL_SIGNAL_RE = /\b(mi|mis|yo|tengo|tenemos|llevo|crear|nueva|nuevo|agregar|puedo|quiero|empezar|empezaré|empiezo)\b/;
+// Señales de que habla de sus propias finanzas.
+const PERSONAL_SIGNAL_RE =
+  /\b(mi|mis|yo|tengo|tenemos|llevo|crear|nueva|nuevo|agregar|puedo|quiero|empezar|empezare|empiezo|ayudame|hazme|hacer)\b/;
 
 const CATEGORY_HINTS = [
   "comida",
@@ -153,23 +144,92 @@ const CATEGORY_HINTS = [
   "shopping",
 ];
 
+const GOAL_HINTS = [
+  "viaje",
+  "viajes",
+  "carro",
+  "coche",
+  "auto",
+  "laptop",
+  "computadora",
+  "emergencia",
+  "emergencias",
+  "renta",
+  "casa",
+  "departamento",
+  "universidad",
+  "intercambio",
+  "maestria",
+  "curso",
+  "celular",
+  "telefono",
+];
+
 const normalizeText = (value = "") =>
   String(value)
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
 
-const extractSavingsGoalPercent = (text) => {
-  const match = text.match(/(\d{1,2})\s*%/);
+const extractSavingsGoalPercent = (text = "") => {
+  const match = String(text).match(/(\d{1,2})\s*%/);
   if (!match) return null;
 
   const parsed = Number(match[1]);
+
   if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 90) return null;
+
   return parsed;
+};
+
+const extractMoneyAmount = (text = "") => {
+  const normalized = normalizeText(text);
+
+  const moneyMatch =
+    normalized.match(/\$\s*(\d+(?:[.,]\d+)?)/) ||
+    normalized.match(/(\d+(?:[.,]\d+)?)\s*(?:mxn|pesos|peso)/) ||
+    normalized.match(/(?:de|por|para)\s+(\d+(?:[.,]\d+)?)/);
+
+  if (!moneyMatch) return null;
+
+  const parsed = Number(String(moneyMatch[1]).replace(",", "."));
+
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+
+  return parsed;
+};
+
+const inferGoalNameHint = (text = "") => {
+  const normalized = normalizeText(text);
+
+  const matchedGoal = GOAL_HINTS.find((goal) => normalized.includes(goal));
+
+  if (matchedGoal) return matchedGoal;
+
+  const paraMatch = normalized.match(/(?:para|por)\s+(?:un|una|mi|mis)?\s*([a-z0-9\s]{3,40})/);
+
+  if (!paraMatch) return null;
+
+  return paraMatch[1]
+    .replace(/\b(de|por|con|en|mxn|pesos|peso)\b/g, "")
+    .trim();
+};
+
+const inferDeadlineHint = (text = "") => {
+  const normalized = normalizeText(text);
+
+  const deadlineMatch =
+    normalized.match(/en\s+(\d+)\s+(dias|dia|semanas|semana|meses|mes|anos|ano)/) ||
+    normalized.match(/para\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/);
+
+  if (!deadlineMatch) return null;
+
+  return deadlineMatch[0];
 };
 
 const isStructuredJsonPrompt = (text = "") => {
   const normalized = normalizeText(text);
+
   return (
     normalized.includes("solo json") ||
     normalized.includes("json valido") ||
@@ -179,38 +239,67 @@ const isStructuredJsonPrompt = (text = "") => {
   );
 };
 
-// ADK para cuando el usuario pregunta sobre sus finanzas
-// "como ahorrar dinero" sin señal personal se va a chatStream
+const getWizardTarget = (lastUserMessage = "") => {
+  const normalized = normalizeText(lastUserMessage);
+
+  if (!normalized || isStructuredJsonPrompt(normalized)) return null;
+
+  const matchedActionVerb = WIZARD_ACTION_VERBS.find((keyword) =>
+    normalized.includes(keyword)
+  );
+
+  if (!matchedActionVerb) return null;
+
+  const matchedBudgetSubject = BUDGET_WIZARD_SUBJECTS.find((keyword) =>
+    normalized.includes(keyword)
+  );
+
+  if (matchedBudgetSubject) return "budget";
+
+  const matchedGoalSubject = GOAL_WIZARD_SUBJECTS.find((keyword) =>
+    normalized.includes(keyword)
+  );
+
+  if (matchedGoalSubject) return "goal";
+
+  return null;
+};
+
+// ADK para cuando el usuario pregunta sobre sus finanzas.
+// Ejemplo: "cuanto llevo ahorrado en mis metas".
 const shouldHandleFinanceIntent = (lastUserMessage = "") => {
   const normalized = normalizeText(lastUserMessage);
+
   if (!normalized || isStructuredJsonPrompt(normalized)) return false;
 
-  const matchedFinanceKeyword = FINANCE_SUBJECTS.find((keyword) => normalized.includes(keyword));
+  const matchedFinanceKeyword = FINANCE_SUBJECTS.find((keyword) =>
+    normalized.includes(keyword)
+  );
+
   const hasFinanceSubject = Boolean(matchedFinanceKeyword);
   const hasPersonalSignal = PERSONAL_SIGNAL_RE.test(normalized);
 
   console.log(
-    `[shouldHandleFinanceIntent] normalized="${normalized}" | financeKeyword=${matchedFinanceKeyword || "none"} | personalSignal=${hasPersonalSignal}`
+    `[shouldHandleFinanceIntent] normalized="${normalized}" | financeKeyword=${
+      matchedFinanceKeyword || "none"
+    } | personalSignal=${hasPersonalSignal}`
   );
 
   return hasFinanceSubject && hasPersonalSignal;
 };
 
-// Budget wizard con palabra de presupuesto y verbo de hacer, crear, etc
+// Wizard cuando quiere crear/planear/agregar presupuesto o meta.
 const shouldRouteToGenerativeUITooling = (lastUserMessage = "") => {
   const normalized = normalizeText(lastUserMessage);
-  if (!normalized || isStructuredJsonPrompt(normalized)) return false;
-
-  const matchedWizardSubject = WIZARD_SUBJECTS.find((keyword) => normalized.includes(keyword));
-  const matchedActionVerb = WIZARD_ACTION_VERBS.find((keyword) => normalized.includes(keyword));
-  const hasWizardSubject = Boolean(matchedWizardSubject);
-  const hasActionVerb = Boolean(matchedActionVerb);
+  const wizardTarget = getWizardTarget(normalized);
 
   console.log(
-    `[shouldRouteToGenerativeUITooling] normalized="${normalized}" | wizardSubject=${matchedWizardSubject || "none"} | actionVerb=${matchedActionVerb || "none"}`
+    `[shouldRouteToGenerativeUITooling] normalized="${normalized}" | wizardTarget=${
+      wizardTarget || "none"
+    }`
   );
 
-  return hasWizardSubject && hasActionVerb;
+  return Boolean(wizardTarget);
 };
 
 const buildBudgetToolPayload = (args = {}, source = "heuristic") => ({
@@ -224,7 +313,7 @@ const buildBudgetToolPayload = (args = {}, source = "heuristic") => ({
   },
   message: {
     content:
-      "Prepare un asistente para construir tu presupuesto sin guardar nada hasta que lo confirmes.",
+      "Preparé un asistente para construir tu presupuesto sin guardar nada hasta que lo confirmes.",
   },
 });
 
@@ -233,28 +322,14 @@ const buildGoalToolPayload = (args = {}, source = "heuristic") => ({
   tool: "generate_goal_wizard",
   data: {
     intent: args.intent || "create_goal",
-    categoryHint: args.categoryHint || null,
-    savingsGoalPercent: Number(args.savingsGoalPercent || 10),
+    goalNameHint: args.goalNameHint || args.categoryHint || null,
+    targetAmount: Number(args.targetAmount || 0) || null,
+    deadlineHint: args.deadlineHint || null,
     source,
   },
   message: {
     content:
-      "Prepare un asistente para crear o ajustar una meta de ahorro sin guardar nada hasta que lo confirme.",
-  },
-});
-
-const buildInvestmentToolPayload = (args = {}, source = "heuristic") => ({
-  type: "ui_tool",
-  tool: "generate_investment_wizard",
-  data: {
-    intent: args.intent || "create_investment",
-    categoryHint: args.categoryHint || null,
-    savingsGoalPercent: Number(args.savingsGoalPercent || 10),
-    source,
-  },
-  message: {
-    content:
-      "Prepare un asistente para crear o ajustar una inversion sin guardar nada hasta que lo confirme.",
+      "Preparé un asistente para crear tu meta de ahorro sin guardar nada hasta que la confirmes.",
   },
 });
 
@@ -268,43 +343,13 @@ const buildTextAgenticResponse = (content, source = "adk") => ({
   },
 });
 
-const inferWizardIntent = (lastUserMessage = "") => {
+const inferBudgetIntent = (lastUserMessage = "") => {
   const normalized = normalizeText(lastUserMessage);
-  if (!shouldRouteToGenerativeUITooling(normalized)) return null;
 
   const categoryHint =
     CATEGORY_HINTS.find((category) => normalized.includes(category)) || null;
+
   const savingsGoalPercent = extractSavingsGoalPercent(normalized) || 10;
-
-  if (/\bmeta\b|\bmetas\b|\bahorro\b|\bahorros\b/.test(normalized)) {
-    return buildGoalToolPayload(
-      {
-        intent: normalized.includes("reduc")
-          ? "reduce_savings_goal"
-          : normalized.includes("ahorr")
-            ? "increase_savings_goal"
-            : "create_goal",
-        categoryHint,
-        savingsGoalPercent,
-      },
-      "heuristic"
-    );
-  }
-
-  if (/\binversion\b|\binversiones\b|\bportafolio\b/.test(normalized)) {
-    return buildInvestmentToolPayload(
-      {
-        intent: normalized.includes("reduc")
-          ? "reduce_investment"
-          : normalized.includes("ahorr")
-            ? "allocate_investment"
-            : "create_investment",
-        categoryHint,
-        savingsGoalPercent,
-      },
-      "heuristic"
-    );
-  }
 
   return buildBudgetToolPayload(
     {
@@ -320,6 +365,34 @@ const inferWizardIntent = (lastUserMessage = "") => {
   );
 };
 
+const inferGoalIntent = (lastUserMessage = "") => {
+  const normalized = normalizeText(lastUserMessage);
+
+  return buildGoalToolPayload(
+    {
+      intent: "create_goal",
+      goalNameHint: inferGoalNameHint(normalized),
+      targetAmount: extractMoneyAmount(normalized),
+      deadlineHint: inferDeadlineHint(normalized),
+    },
+    "heuristic"
+  );
+};
+
+const inferWizardIntent = (lastUserMessage = "") => {
+  const wizardTarget = getWizardTarget(lastUserMessage);
+
+  if (wizardTarget === "goal") {
+    return inferGoalIntent(lastUserMessage);
+  }
+
+  if (wizardTarget === "budget") {
+    return inferBudgetIntent(lastUserMessage);
+  }
+
+  return null;
+};
+
 const getGeminiApiKey = () =>
   process.env.GEMINI_API_KEY ||
   process.env.GEMINI_API ||
@@ -329,6 +402,7 @@ const getGeminiModel = () => process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 const hasGeminiApiKey = () => {
   const apiKey = getGeminiApiKey();
+
   return apiKey && apiKey !== "GEMINI_API_PLACEHOLDER";
 };
 
@@ -345,6 +419,7 @@ const callGeminiToolRouter = async (messages = []) => {
 
   const apiKey = getGeminiApiKey();
   const model = getGeminiModel();
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const geminiRes = await fetch(url, {
@@ -355,7 +430,7 @@ const callGeminiToolRouter = async (messages = []) => {
         parts: [
           {
             text:
-              "Eres el router de UI generativa de Vibantik. Llama generate_budget_wizard, generate_goal_wizard o generate_investment_wizard unicamente cuando el usuario quiera crear, planear, ajustar o reducir un presupuesto, una meta o una inversion. No guardes datos ni ejecutes acciones; solo devuelve la llamada de herramienta con argumentos seguros.",
+              "Eres el router de UI generativa de Vibantik. Llama generate_budget_wizard o generate_goal_wizard unicamente cuando el usuario quiera crear, planear, ajustar o reducir un presupuesto o una meta de ahorro. No guardes datos ni ejecutes acciones; solo devuelve la llamada de herramienta con argumentos seguros.",
           },
         ],
       },
@@ -368,7 +443,6 @@ const callGeminiToolRouter = async (messages = []) => {
       toolConfig: {
         functionCallingConfig: {
           mode: "AUTO",
-          // allowedFunctionNames only valid with mode "ANY" per Gemini docs
         },
       },
     }),
@@ -382,9 +456,7 @@ const callGeminiToolRouter = async (messages = []) => {
   const parts = geminiJson?.candidates?.[0]?.content?.parts || [];
   const functionCall = parts.find((part) => part.functionCall)?.functionCall;
 
-  if (!functionCall) {
-    return null;
-  }
+  if (!functionCall) return null;
 
   if (functionCall.name === "generate_budget_wizard") {
     return buildBudgetToolPayload(functionCall.args || {}, "gemini");
@@ -394,14 +466,10 @@ const callGeminiToolRouter = async (messages = []) => {
     return buildGoalToolPayload(functionCall.args || {}, "gemini");
   }
 
-  if (functionCall.name === "generate_investment_wizard") {
-    return buildInvestmentToolPayload(functionCall.args || {}, "gemini");
-  }
-
   return null;
 };
 
-const planLegacyBudgetWizardResponse = async (messages = []) => {
+const planLegacyFinanceWizardResponse = async (messages = []) => {
   const lastUserMessage = [...messages]
     .reverse()
     .find((message) => message?.role === "user" && message?.content)?.content;
@@ -412,6 +480,7 @@ const planLegacyBudgetWizardResponse = async (messages = []) => {
 
   try {
     const geminiToolResponse = await callGeminiToolRouter(messages);
+
     if (geminiToolResponse) {
       return geminiToolResponse;
     }
@@ -425,13 +494,15 @@ const planLegacyBudgetWizardResponse = async (messages = []) => {
 module.exports = {
   TOOL_DEFINITIONS,
   buildBudgetToolPayload,
+  buildGoalToolPayload,
   buildTextAgenticResponse,
   getGeminiApiKey,
   getGeminiModel,
+  getWizardTarget,
   hasGeminiApiKey,
   isStructuredJsonPrompt,
   normalizeText,
-  planLegacyBudgetWizardResponse,
+  planLegacyFinanceWizardResponse,
   shouldHandleFinanceIntent,
   shouldRouteToGenerativeUITooling,
   toGeminiContents,
