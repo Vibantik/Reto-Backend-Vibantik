@@ -127,7 +127,7 @@ const WIZARD_ACTION_VERBS = [
 // Palabras y terminos de finanzas para routear a ADK
 const FINANCE_SUBJECTS = [
   "meta", "metas",
-  "inversion", "inversiones",
+  "inversion", "inversiones", "invertir", "invirtiendo",
   "ahorro", "ahorros", "ahorrar",
   "presupuesto",
   "saldo",
@@ -138,7 +138,7 @@ const FINANCE_SUBJECTS = [
 ];
 
 // "crear"/"nueva"/"nuevo"/"agregar" para metas/inversiones, sino esto como flag de finanzas personales
-const PERSONAL_SIGNAL_RE = /\b(mi|mis|yo|tengo|tenemos|llevo|crear|nueva|nuevo|agregar)\b/;
+const PERSONAL_SIGNAL_RE = /\b(mi|mis|yo|tengo|tenemos|llevo|crear|nueva|nuevo|agregar|puedo|quiero|empezar|empezaré|empiezo)\b/;
 
 const CATEGORY_HINTS = [
   "comida",
@@ -185,8 +185,15 @@ const shouldHandleFinanceIntent = (lastUserMessage = "") => {
   const normalized = normalizeText(lastUserMessage);
   if (!normalized || isStructuredJsonPrompt(normalized)) return false;
 
-  const hasFinanceSubject = FINANCE_SUBJECTS.some((keyword) => normalized.includes(keyword));
-  return hasFinanceSubject && PERSONAL_SIGNAL_RE.test(normalized);
+  const matchedFinanceKeyword = FINANCE_SUBJECTS.find((keyword) => normalized.includes(keyword));
+  const hasFinanceSubject = Boolean(matchedFinanceKeyword);
+  const hasPersonalSignal = PERSONAL_SIGNAL_RE.test(normalized);
+
+  console.log(
+    `[shouldHandleFinanceIntent] normalized="${normalized}" | financeKeyword=${matchedFinanceKeyword || "none"} | personalSignal=${hasPersonalSignal}`
+  );
+
+  return hasFinanceSubject && hasPersonalSignal;
 };
 
 // Budget wizard con palabra de presupuesto y verbo de hacer, crear, etc
@@ -194,11 +201,13 @@ const shouldRouteToGenerativeUITooling = (lastUserMessage = "") => {
   const normalized = normalizeText(lastUserMessage);
   if (!normalized || isStructuredJsonPrompt(normalized)) return false;
 
-  const hasWizardSubject = WIZARD_SUBJECTS.some((keyword) =>
-    normalized.includes(keyword)
-  );
-  const hasActionVerb = WIZARD_ACTION_VERBS.some((keyword) =>
-    normalized.includes(keyword)
+  const matchedWizardSubject = WIZARD_SUBJECTS.find((keyword) => normalized.includes(keyword));
+  const matchedActionVerb = WIZARD_ACTION_VERBS.find((keyword) => normalized.includes(keyword));
+  const hasWizardSubject = Boolean(matchedWizardSubject);
+  const hasActionVerb = Boolean(matchedActionVerb);
+
+  console.log(
+    `[shouldRouteToGenerativeUITooling] normalized="${normalized}" | wizardSubject=${matchedWizardSubject || "none"} | actionVerb=${matchedActionVerb || "none"}`
   );
 
   return hasWizardSubject && hasActionVerb;

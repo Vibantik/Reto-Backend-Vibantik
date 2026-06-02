@@ -26,17 +26,23 @@ const isMissingOptionalDependencyError = (error) => {
 };
 
 const runFinanceAgentRuntime = async (input) => {
+  console.log("[runFinanceAgentRuntime] loading ADK module...");
   try {
     const adkRuntime = await loadAdkRuntimeModule();
-    return await adkRuntime.runFinanceAgent(input);
+    console.log("[runFinanceAgentRuntime] ADK module loaded, calling runFinanceAgent...");
+    const result = await adkRuntime.runFinanceAgent(input);
+    console.log("[runFinanceAgentRuntime] runFinanceAgent returned:", result ? `type=${result.type}` : "null/undefined");
+    return result;
   } catch (error) {
     if (isMissingOptionalDependencyError(error)) {
       console.warn(
-        "ADK runtime is not available yet. Falling back to the legacy agentic flow."
+        "[runFinanceAgentRuntime] ADK runtime is not available (missing dependency). code=" +
+          error.code + " message=" + error.message
       );
       return null;
     }
 
+    console.error("[runFinanceAgentRuntime] unexpected error:", error.message || error);
     throw error;
   }
 };

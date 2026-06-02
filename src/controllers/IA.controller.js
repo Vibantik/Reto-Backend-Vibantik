@@ -15,11 +15,16 @@ const startChatbot = async (req, res) => {
       agent_preferences,
     } = req.body;
 
+    const lastMsg = [...(messages || [])].reverse().find((m) => m?.role === "user")?.content;
+    console.log(`[startChatbot] incoming message: "${lastMsg}" | uuid=${uuid_de_usuario || "anon"}`);
+
     const toolPlan = await planAgenticResponse(messages, {
       userUuid: uuid_de_usuario || null,
       conversationId: conversation_id || null,
       agentPreferences: agent_preferences || {},
     });
+
+    console.log("[startChatbot] toolPlan:", toolPlan ? `type=${toolPlan.type} source=${toolPlan.meta?.source || "n/a"}` : "null → fallback to chat()");
 
     if (toolPlan) {
       res.setHeader("Content-Type", "application/x-ndjson");
@@ -46,7 +51,9 @@ const startChatbot = async (req, res) => {
       ...messages,
     ];
 
+    console.log("[startChatbot] calling chat() (Ollama/Gemini provider)...");
     const rawText = await chat(fullMessages);
+    console.log("[startChatbot] chat() raw response (first 200 chars):", String(rawText).slice(0, 200));
 
     let responseChunk;
     try {
