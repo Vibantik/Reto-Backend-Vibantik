@@ -142,13 +142,13 @@ const createFinanceTools = (requestContext = {}) => {
     execute: async () => getGoalsSnapshot(requestContext.userUuid),
   });
 
-  const investmentsSnapshotTool = new FunctionTool({
-    name: "get_investments_snapshot",
-    description:
-      "Consulta las inversiones del usuario, el capital activo y los vencimientos proximos.",
-    parameters: z.object({}),
-    execute: async () => getInvestmentsSnapshot(requestContext.userUuid),
-  });
+const investmentsSnapshotTool = new FunctionTool({
+  name: "get_investments_snapshot",
+  description:
+    "Consulta las inversiones del usuario, capital activo, tipo con mayor inversión, desglose por tipo, desglose por riesgo, perfil inversionista inferido, concentración y vencimientos próximos.",
+  parameters: z.object({}),
+  execute: async () => getInvestmentsSnapshot(requestContext.userUuid),
+});
 
   const financialOverviewTool = new FunctionTool({
     name: "get_financial_overview",
@@ -225,22 +225,30 @@ const createFinanceAgent = (requestContext = {}) => {
     ),
   });
 
-  const investmentAdvisor = new LlmAgent({
-    name: "investment_advisor",
-    description:
-      "Especialista en inversiones, capital activo, vencimientos proximos y diversificacion.",
-    ...createSharedAgentConfig(
-      requestContext,
-      [
-        "Eres el especialista en inversiones de Vibantik.",
-        "Usa solo los datos consultados y evita recomendaciones regulatorias o promesas de rendimiento.",
-        createReadOnlyPolicyMessage(),
-      ].join(" "),
-      [investmentsSnapshotTool]
-    ),
-  });
+const investmentAdvisor = new LlmAgent({
+  name: "investment_advisor",
+  description:
+  "Usa este subagente para cualquier pregunta sobre inversiones, vencimientos de inversiones, perfil inversionista, capital invertido, tipo de inversion dominante, concentracion, rendimiento, CETES, pagarés, fondos y diversificacion.",
+  ...createSharedAgentConfig(
+    requestContext,
+    [
+      "Eres el especialista en inversiones de Vibantik.",
+      "Siempre consulta get_investments_snapshot antes de responder sobre inversiones del usuario.",
+      "Responde SIEMPRE en texto natural dentro del chat. No menciones componentes, widgets, tablas externas, paneles ni secciones visuales.",
+      "Nunca digas frases como: 'revisa el componente a continuación', 'en el componente', 'en la tabla siguiente' o 'se muestra abajo'.",
+      "Usa directamente los datos de la herramienta para contestar la pregunta del usuario.",
+      "Usa los campos topInvestmentType, typeBreakdown, riskBreakdown, investorProfile, investorProfileReason, biggestInvestment, concentrationWarnings, maturingSoon y maturingSoonList cuando estén disponibles.",
+      "Si el usuario pregunta qué inversiones vencen pronto, responde directamente con la lista de maturingSoonList. Si la lista está vacía, di claramente que no tiene inversiones venciendo en los próximos 30 días.",
+      "Explica con montos y porcentajes cuando el usuario pregunte por concentración, perfil o tipo de inversión dominante.",
+      "No prometas rendimientos, no des asesoría regulatoria y no recomiendes comprar o vender instrumentos específicos.",
+      "Puedes dar observaciones educativas y sugerir revisar la diversificación si hay concentración alta.",
+      createReadOnlyPolicyMessage(),
+    ].join(" "),
+    [investmentsSnapshotTool]
+  ),
+});
 
-  return new LlmAgent({
+    return new LlmAgent({
     name: "finance_concierge",
     description:
       "Concierge financiero que coordina ayuda entre presupuestos, metas e inversiones.",
@@ -250,6 +258,11 @@ const createFinanceAgent = (requestContext = {}) => {
       [
         "Eres Aura Finance Concierge para Vibantik y respondes siempre en espanol.",
         "Tu rol es dar ayuda util y controlada sobre presupuestos, metas e inversiones.",
+        "Todas las respuestas deben ser texto directo dentro del chat.",
+        "No prometas mostrar componentes, widgets, graficas, tablas externas, simuladores, paneles ni contenido adicional debajo del mensaje.",
+        "Nunca digas frases como: 'revisa el componente a continuacion', 'en el componente', 'en la tabla siguiente', 'se muestra abajo', 'usa nuestro simulador' o similares.",
+        "Si el usuario pregunta sobre inversiones, vencimientos, perfil inversionista, capital invertido, concentracion, rendimiento, CETES, pagarés, fondos o tipo de inversion dominante, DEBES delegar al subagente investment_advisor.",
+        "Si usas una herramienta o delegas a un subagente, resume el resultado directamente en el mensaje final.",
         "Antes de afirmar datos del usuario, consulta una tool o delega a un subagente especialista.",
         "Si faltan datos del usuario, dilo con claridad y pide continuar desde el chatbot autenticado.",
         "No ejecutes cambios de escritura en este flujo.",
