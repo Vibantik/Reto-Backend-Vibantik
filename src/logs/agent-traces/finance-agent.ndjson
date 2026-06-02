@@ -1,0 +1,22 @@
+{"ts":"2026-06-02T22:54:12.545Z","stage":"agent_run_start","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1710,"promptPreview":"¿En qué tipo de inversión tengo más invertido?","hasSystemPrompt":false}
+{"ts":"2026-06-02T22:54:14.294Z","stage":"before_tool","tool":"transfer_to_agent","args":{"agentName":"investment_advisor"},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T22:54:16.317Z","stage":"before_tool","tool":"get_investments_snapshot","args":{},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T22:54:18.586Z","stage":"after_agent","agentName":"investment_advisor","sessionId":1710,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T22:54:18.587Z","stage":"after_agent","agentName":"finance_concierge","sessionId":1710,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T22:54:18.589Z","stage":"agent_run_finish","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1710,"responsePreview":"El tipo de inversión en el que tienes más invertido es en Pagaré Bancario, con un total de $250,000."}
+{"ts":"2026-06-02T23:01:44.721Z","stage":"agent_run_start","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1715,"promptPreview":"¿En qué tipo de inversión tengo más invertido?","hasSystemPrompt":false}
+{"ts":"2026-06-02T23:01:46.347Z","stage":"before_tool","tool":"transfer_to_agent","args":{"agentName":"investment_advisor"},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:01:47.688Z","stage":"before_tool","tool":"get_investments_snapshot","args":{},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:01:50.242Z","stage":"after_agent","agentName":"investment_advisor","sessionId":1715,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:01:50.243Z","stage":"after_agent","agentName":"finance_concierge","sessionId":1715,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:01:50.244Z","stage":"agent_run_finish","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1715,"responsePreview":"Tienes más invertido en Pagaré Bancario, con un monto de $250,000, lo que representa el 37.04% de tus inversiones. Le siguen los Fondos de Inversión con $225,000 (33.33%) y CETES con $200,000 (29.63%)."}
+{"ts":"2026-06-02T23:01:58.627Z","stage":"agent_run_start","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1715,"promptPreview":"¿Cuál es mi perfil inversionista?","hasSystemPrompt":false}
+{"ts":"2026-06-02T23:02:00.013Z","stage":"before_tool","tool":"get_investments_snapshot","args":{},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:02:01.373Z","stage":"after_agent","agentName":"investment_advisor","sessionId":1715,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:02:01.374Z","stage":"agent_run_finish","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1715,"responsePreview":"Tu perfil de inversionista es **moderado**. Esto se debe a que no se observa una concentración dominante de alto riesgo ni una cartera completamente conservadora. Tienes un 66.67% de tus inversiones en riesgo bajo y un 33.33% en riesgo medi"}
+{"ts":"2026-06-02T23:14:47.286Z","stage":"agent_run_start","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1721,"promptPreview":"cuales de mis inversiones vencen pronto","hasSystemPrompt":false}
+{"ts":"2026-06-02T23:14:48.602Z","stage":"before_tool","tool":"transfer_to_agent","args":{"agentName":"investment_advisor"},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:14:49.716Z","stage":"before_tool","tool":"get_investments_snapshot","args":{},"userUuid":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:14:52.052Z","stage":"after_agent","agentName":"investment_advisor","sessionId":1721,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:14:52.054Z","stage":"after_agent","agentName":"finance_concierge","sessionId":1721,"userId":"dbf9f839-b57e-415f-8b5b-9213524ed827"}
+{"ts":"2026-06-02T23:14:52.056Z","stage":"agent_run_finish","userId":"dbf9f839-b57e-415f-8b5b-9213524ed827","sessionId":1721,"responsePreview":"Tienes una inversión que vence pronto:\n\n*   **CETES 28 días B** por un valor de $120,000.00, con fecha de vencimiento el 15 de junio de 2026."}

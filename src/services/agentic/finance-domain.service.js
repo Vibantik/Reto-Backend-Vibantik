@@ -11,9 +11,10 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const formatPercentage = (value) => Number(Number(value || 0).toFixed(2));
+
 const normalizeInvestmentType = (tipo = "Sin tipo") => {
   const normalized = String(tipo || "Sin tipo").trim();
-
   return normalized || "Sin tipo";
 };
 
@@ -83,69 +84,108 @@ async function getGoalsSnapshot(uuid) {
   };
 }
 
-const getInvestmentProfile = ({
-  totalInvested,
-  typeBreakdown,
-  activeInvestments,
-}) => {
-  if (!totalInvested || !activeInvestments.length) {
+const getDaysUntil = (dateValue) => {
+  if (!dateValue) return null;
+
+  const today = new Date();
+  const target = new Date(dateValue);
+
+  if (Number.isNaN(target.getTime())) return null;
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  const diff = target.getTime() - today.getTime();
+
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
+
+const getRiskBucketFromType = (tipo = "") => {
+  const normalized = normalizeInvestmentType(tipo).toLowerCase();
+
+  if (
+    normalized.includes("cetes") ||
+    normalized.includes("pagar") ||
+    normalized.includes("pagaré") ||
+    normalized.includes("plazo") ||
+    normalized.includes("bono") ||
+    normalized.includes("renta fija")
+  ) {
+    return "bajo";
+  }
+
+  if (
+    normalized.includes("fondo") ||
+    normalized.includes("etf") ||
+    normalized.includes("mixto") ||
+    normalized.includes("balanceado")
+  ) {
+    return "medio";
+  }
+
+  if (
+    normalized.includes("accion") ||
+    normalized.includes("acciones") ||
+    normalized.includes("cripto") ||
+    normalized.includes("crypto") ||
+    normalized.includes("renta variable")
+  ) {
+    return "alto";
+  }
+
+  return "no clasificado";
+};
+
+const inferInvestorProfile = ({ totalInvested, typeBreakdown, riskBreakdown }) => {
+  if (!totalInvested || !typeBreakdown.length) {
     return {
       profile: "sin información suficiente",
       reason:
-        "No hay inversiones activas suficientes para inferir un perfil inversionista.",
+        "No hay suficientes inversiones activas para inferir un perfil inversionista.",
     };
   }
 
-  const sortedTypes = [...typeBreakdown].sort(
-    (a, b) => b.totalInvested - a.totalInvested
-  );
+  const lowRisk = riskBreakdown.find((item) => item.risk === "bajo")?.percentage || 0;
+  const mediumRisk =
+    riskBreakdown.find((item) => item.risk === "medio")?.percentage || 0;
+  const highRisk = riskBreakdown.find((item) => item.risk === "alto")?.percentage || 0;
 
-  const mainType = sortedTypes[0];
-  const mainShare = mainType?.percentage || 0;
+  const topType = typeBreakdown[0];
+  const concentration = topType?.percentage || 0;
 
-  const hasVariableOrCrypto = sortedTypes.some((item) => {
-    const type = item.tipo.toLowerCase();
-
-    return (
-      type.includes("accion") ||
-      type.includes("acciones") ||
-      type.includes("renta variable") ||
-      type.includes("crypto") ||
-      type.includes("cripto") ||
-      type.includes("etf")
-    );
-  });
-
-  const hasFixedIncome = sortedTypes.some((item) => {
-    const type = item.tipo.toLowerCase();
-
-    return (
-      type.includes("cetes") ||
-      type.includes("bono") ||
-      type.includes("bonos") ||
-      type.includes("renta fija") ||
-      type.includes("fondo")
-    );
-  });
-
-  if (hasVariableOrCrypto && mainShare >= 60) {
-    return {
-      profile: "agresivo",
-      reason: `La mayor parte de tu inversión está concentrada en ${mainType.tipo}, que suele asociarse con mayor volatilidad.`,
-    };
-  }
-
-  if (hasFixedIncome && mainShare >= 70) {
+  if (lowRisk >= 70) {
     return {
       profile: "conservador",
-      reason: `La mayor parte de tu inversión está concentrada en ${mainType.tipo}, que suele asociarse con menor volatilidad.`,
+      reason: `Aproximadamente ${lowRisk}% de tu capital activo está en instrumentos clasificados como riesgo bajo.`,
+    };
+  }
+
+  if (highRisk >= 50) {
+    return {
+      profile: "agresivo",
+      reason: `Aproximadamente ${highRisk}% de tu capital activo está en instrumentos clasificados como riesgo alto.`,
+    };
+  }
+
+  if (concentration >= 75) {
+    return {
+      profile: "concentrado",
+      reason: `Tienes ${concentration}% de tu capital activo concentrado en ${topType.tipo}.`,
+    };
+  }
+
+  if (mediumRisk >= 40 || (lowRisk > 0 && highRisk > 0)) {
+    return {
+      profile: "moderado",
+      reason:
+        "Tu capital activo parece estar distribuido entre instrumentos de distintos niveles de riesgo.",
     };
   }
 
   return {
     profile: "moderado",
     reason:
-      "Tu inversión parece estar distribuida entre distintos tipos o no está excesivamente concentrada en activos de alto riesgo.",
+      "No se observa una concentración dominante de alto riesgo ni una cartera completamente conservadora.",
   };
 };
 
@@ -157,76 +197,135 @@ async function getInvestmentsSnapshot(uuid) {
 
   inThirtyDays.setDate(inThirtyDays.getDate() + 30);
 
-  const activeInvestments = inversiones.filter(
-    (investment) =>
-      investment?.fecha_fin && new Date(investment.fecha_fin) > now
+  const normalizedInvestments = inversiones.map((investment) => {
+    const tipo = normalizeInvestmentType(investment.tipo);
+    const valor = toNumber(investment.valor);
+    const fechaFin = investment.fecha_fin;
+    const daysUntilMaturity = getDaysUntil(fechaFin);
+    const riskBucket = getRiskBucketFromType(tipo);
+
+    return {
+      id: investment.id_inversión || investment.id_inversion,
+      nombre: investment.nombre,
+      valor,
+      tipo,
+      fechaInicio: investment.fecha_inicio,
+      fechaFin,
+      daysUntilMaturity,
+      riskBucket,
+      isActive: fechaFin ? new Date(fechaFin) > now : true,
+    };
+  });
+
+  const activeInvestments = normalizedInvestments.filter(
+    (investment) => investment.isActive
   );
 
   const totalInvested = activeInvestments.reduce(
-    (sum, investment) => sum + toNumber(investment.valor),
+    (sum, investment) => sum + investment.valor,
     0
   );
 
-  const typeTotalsMap = activeInvestments.reduce((acc, investment) => {
-    const tipo = normalizeInvestmentType(investment.tipo);
-    const current = acc.get(tipo) || {
-      tipo,
+  const typeTotals = activeInvestments.reduce((acc, investment) => {
+    const current = acc.get(investment.tipo) || {
+      tipo: investment.tipo,
       totalInvested: 0,
       count: 0,
     };
 
-    current.totalInvested += toNumber(investment.valor);
+    current.totalInvested += investment.valor;
     current.count += 1;
 
-    acc.set(tipo, current);
+    acc.set(investment.tipo, current);
 
     return acc;
   }, new Map());
 
-  const typeBreakdown = [...typeTotalsMap.values()]
+  const typeBreakdown = [...typeTotals.values()]
     .map((item) => ({
       ...item,
       percentage: totalInvested
-        ? Number(((item.totalInvested / totalInvested) * 100).toFixed(2))
+        ? formatPercentage((item.totalInvested / totalInvested) * 100)
+        : 0,
+    }))
+    .sort((a, b) => b.totalInvested - a.totalInvested);
+
+  const riskTotals = activeInvestments.reduce((acc, investment) => {
+    const current = acc.get(investment.riskBucket) || {
+      risk: investment.riskBucket,
+      totalInvested: 0,
+      count: 0,
+    };
+
+    current.totalInvested += investment.valor;
+    current.count += 1;
+
+    acc.set(investment.riskBucket, current);
+
+    return acc;
+  }, new Map());
+
+  const riskBreakdown = [...riskTotals.values()]
+    .map((item) => ({
+      ...item,
+      percentage: totalInvested
+        ? formatPercentage((item.totalInvested / totalInvested) * 100)
         : 0,
     }))
     .sort((a, b) => b.totalInvested - a.totalInvested);
 
   const topInvestmentType = typeBreakdown[0] || null;
 
-  const maturingSoonList = activeInvestments
-    .filter((investment) => new Date(investment.fecha_fin) <= inThirtyDays)
-    .map((investment) => ({
-      id: investment.id_inversión || investment.id_inversion,
-      nombre: investment.nombre,
-      valor: toNumber(investment.valor),
-      tipo: investment.tipo,
-      fechaFin: investment.fecha_fin,
-    }));
+  const biggestInvestment =
+    [...activeInvestments].sort((a, b) => b.valor - a.valor)[0] || null;
 
-  const profile = getInvestmentProfile({
+  const maturingSoonList = activeInvestments
+    .filter((investment) => {
+      if (investment.daysUntilMaturity === null) return false;
+      return investment.daysUntilMaturity >= 0 && investment.daysUntilMaturity <= 30;
+    })
+    .sort((a, b) => a.daysUntilMaturity - b.daysUntilMaturity);
+
+  const concentrationWarnings = [];
+
+  if (topInvestmentType?.percentage >= 70) {
+    concentrationWarnings.push(
+      `Alta concentración por tipo: ${topInvestmentType.percentage}% está en ${topInvestmentType.tipo}.`
+    );
+  }
+
+  if (biggestInvestment && totalInvested) {
+    const biggestShare = formatPercentage(
+      (biggestInvestment.valor / totalInvested) * 100
+    );
+
+    if (biggestShare >= 50) {
+      concentrationWarnings.push(
+        `Alta concentración individual: ${biggestShare}% está en ${biggestInvestment.nombre}.`
+      );
+    }
+  }
+
+  const investorProfile = inferInvestorProfile({
     totalInvested,
     typeBreakdown,
-    activeInvestments,
+    riskBreakdown,
   });
 
   return {
     totalInvestments: inversiones.length,
     activeInvestments: activeInvestments.length,
     totalInvested,
-    maturingSoon: maturingSoonList.length,
-    maturingSoonList,
     topInvestmentType,
+    biggestInvestment,
     typeBreakdown,
-    investorProfile: profile.profile,
-    investorProfileReason: profile.reason,
-    investments: activeInvestments.slice(0, 10).map((investment) => ({
-      id: investment.id_inversión || investment.id_inversion,
-      nombre: investment.nombre,
-      valor: toNumber(investment.valor),
-      tipo: investment.tipo,
-      fechaFin: investment.fecha_fin,
-    })),
+    riskBreakdown,
+    investorProfile: investorProfile.profile,
+    investorProfileReason: investorProfile.reason,
+    concentrationWarnings,
+    maturingSoon: maturingSoonList.length,
+    maturingSoonList: maturingSoonList.slice(0, 10),
+    investments: activeInvestments.slice(0, 10),
   };
 }
 
