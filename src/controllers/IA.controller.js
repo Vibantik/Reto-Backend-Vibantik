@@ -52,7 +52,19 @@ const startChatbot = async (req, res) => {
     ];
 
     console.log("[startChatbot] calling chat() (Ollama/Gemini provider)...");
-    const rawText = await chat(fullMessages);
+    let rawText;
+    try {
+      rawText = await chat(fullMessages);
+    } catch (chatErr) {
+      console.error("[startChatbot] all providers failed:", chatErr.message);
+      res.setHeader("Content-Type", "application/x-ndjson");
+      res.write(`${JSON.stringify({
+        type: "assistant_text",
+        message: { role: "assistant", content: "El servicio de IA no está disponible en este momento. Por favor intenta de nuevo en unos minutos." },
+        done: true,
+      })}\n`);
+      return res.end();
+    }
     console.log("[startChatbot] chat() raw response (first 200 chars):", String(rawText).slice(0, 200));
 
     let responseChunk;
