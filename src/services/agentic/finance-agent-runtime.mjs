@@ -328,20 +328,27 @@ export async function runFinanceAgent({
   });
 
   let finalText = "";
+  let eventCount = 0;
 
   for await (const event of runner.runAsync({
     userId,
     sessionId,
     newMessage: createUserContent(lastUserMessage),
   })) {
-    if (isFinalResponse(event)) {
+    eventCount++;
+    const isFinal = isFinalResponse(event);
+    console.log(`[ADK runner] event #${eventCount} author=${event.author} isFinal=${isFinal} hasContent=${Boolean(event.content)}`);
+    if (isFinal) {
       const parts = event.content?.parts || [];
+      console.log(`[ADK runner] final event parts:`, JSON.stringify(parts).slice(0, 300));
       finalText += parts
         .map((part) => part?.text || "")
         .filter(Boolean)
         .join("");
     }
   }
+
+  console.log(`[ADK runner] loop done. eventCount=${eventCount} finalText length=${finalText.trim().length}`);
 
   const trimmedText = finalText.trim();
   if (!trimmedText) {
