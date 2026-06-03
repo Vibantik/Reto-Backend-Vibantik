@@ -11,6 +11,7 @@ const {
 } = require("./agentic/legacy-finance-router");
 
 const { runFinanceAgentRuntime } = require("./agentic/adk-runtime");
+const { chat } = require("./ai-provider");
 
 const GEMINI_API = getGeminiApiKey();
 const GEMINI_MODEL = getGeminiModel();
@@ -74,8 +75,26 @@ const planAgenticResponse = async (messages = [], requestContext = {}) => {
     );
   }
 
-  console.log("[planAgenticResponse] → fallback text (ADK returned null or failed)");
+  console.log("[planAgenticResponse] → ADK null, trying Gemini direct chat fallback");
+  try {
+    const financeMessages = [
+      {
+        role: "system",
+        content:
+          "Eres Aura, asistente de finanzas personales de Vibantik. Respondes siempre en español. Ayudas con preguntas sobre presupuestos, metas de ahorro, inversiones y educación financiera. Si el usuario pregunta por datos específicos de su cuenta que no tienes, explícalo brevemente y orienta hacia la sección correcta de la app.",
+      },
+      ...messages,
+    ];
+    const geminiText = await chat(financeMessages);
+    if (geminiText) {
+      console.log("[planAgenticResponse] Gemini fallback succeeded");
+      return buildTextAgenticResponse(geminiText, "gemini_fallback");
+    }
+  } catch (geminiErr) {
+    console.error("[planAgenticResponse] Gemini fallback failed:", geminiErr.message);
+  }
 
+  console.log("[planAgenticResponse] → final hardcoded fallback");
   return buildTextAgenticResponse(
     "Para consultar información detallada de tus finanzas personales, revisa las secciones de Gastos, Presupuestos o Metas en la app.",
     "fallback"

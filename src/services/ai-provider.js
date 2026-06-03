@@ -65,7 +65,15 @@ async function chat(messages, opts = {}) {
   if (provider === "gemini") {
     return _geminiChat(messages, opts);
   }
-  return _ollamaChat(messages, opts);
+  try {
+    return await _ollamaChat(messages, opts);
+  } catch (err) {
+    if (process.env.GEMINI_API_KEY) {
+      console.warn("[chat] Ollama unavailable, falling back to Gemini:", err.message);
+      return _geminiChat(messages, opts);
+    }
+    throw err;
+  }
 }
 
 async function _ollamaChat(messages, opts) {
@@ -92,7 +100,7 @@ async function _geminiChat(messages, opts) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
-  const model = opts.model || process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = opts.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const { systemInstruction, contents } = toGeminiContents(messages);
@@ -140,7 +148,15 @@ async function chatStream(messages, res, opts = {}) {
   if (provider === "gemini") {
     return _geminiChatStream(messages, res, opts);
   }
-  return _ollamaChatStream(messages, res, opts);
+  try {
+    return await _ollamaChatStream(messages, res, opts);
+  } catch (err) {
+    if (process.env.GEMINI_API_KEY && !res.headersSent) {
+      console.warn("[chatStream] Ollama unavailable, falling back to Gemini:", err.message);
+      return _geminiChatStream(messages, res, opts);
+    }
+    throw err;
+  }
 }
 
 async function _ollamaChatStream(messages, res, opts) {
@@ -173,7 +189,7 @@ async function _geminiChatStream(messages, res, opts) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
-  const model = opts.model || process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = opts.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
   const { systemInstruction, contents } = toGeminiContents(messages);
@@ -266,7 +282,15 @@ async function generate(prompt, opts = {}) {
   if (provider === "gemini") {
     return _geminiGenerate(prompt, opts);
   }
-  return _ollamaGenerate(prompt, opts);
+  try {
+    return await _ollamaGenerate(prompt, opts);
+  } catch (err) {
+    if (process.env.GEMINI_API_KEY) {
+      console.warn("[generate] Ollama unavailable, falling back to Gemini:", err.message);
+      return _geminiGenerate(prompt, opts);
+    }
+    throw err;
+  }
 }
 
 async function _ollamaGenerate(prompt, opts) {
@@ -295,7 +319,7 @@ async function _geminiGenerate(prompt, opts) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
-  const model = opts.model || process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = opts.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const body = {
