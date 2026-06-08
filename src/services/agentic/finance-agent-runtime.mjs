@@ -112,19 +112,6 @@ const createToolCallbacks = (requestContext = {}) => {
   };
 };
 
-const createSharedAgentConfig = (requestContext, instruction, tools = []) => {
-  const { beforeToolCallback, afterAgentCallback } =
-    createToolCallbacks(requestContext);
-
-  return {
-    model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-    instruction,
-    tools,
-    beforeToolCallback,
-    afterAgentCallback,
-  };
-};
-
 const createFinanceTools = (requestContext = {}) => {
   const budgetSnapshotTool = new FunctionTool({
     name: "get_budget_snapshot",
@@ -194,82 +181,33 @@ const createFinanceAgent = (requestContext = {}) => {
     financeMemoryTool,
   } = createFinanceTools(requestContext);
 
-  const budgetAdvisor = new LlmAgent({
-    name: "budget_advisor",
-    description:
-      "Especialista en presupuestos mensuales, saldo restante, control del gasto y ajustes sugeridos.",
-    ...createSharedAgentConfig(
-      requestContext,
-      [
-        "Eres el especialista de presupuestos de Vibantik.",
-        "Consulta datos reales antes de responder.",
-        "No inventes montos.",
-        createReadOnlyPolicyMessage(),
-      ].join(" "),
-      [budgetSnapshotTool]
-    ),
-  });
+  const { beforeToolCallback, afterAgentCallback } = createToolCallbacks(requestContext);
 
-  const goalsCoach = new LlmAgent({
-    name: "goals_coach",
-    description:
-      "Especialista en metas de ahorro, progreso, proximos vencimientos y recomendaciones accionables.",
-    ...createSharedAgentConfig(
-      requestContext,
-      [
-        "Eres el especialista en metas de ahorro de Vibantik.",
-        "Usa las metas reales del usuario para explicar progreso, riesgos y siguientes pasos.",
-        createReadOnlyPolicyMessage(),
-      ].join(" "),
-      [goalsSnapshotTool]
-    ),
-  });
-
-const investmentAdvisor = new LlmAgent({
-  name: "investment_advisor",
-  description:
-  "Usa este subagente para cualquier pregunta sobre inversiones, vencimientos de inversiones, perfil inversionista, capital invertido, tipo de inversion dominante, concentracion, rendimiento, CETES, pagarés, fondos y diversificacion.",
-  ...createSharedAgentConfig(
-    requestContext,
-    [
-      "Eres el especialista en inversiones de Vibantik.",
-      "Siempre consulta get_investments_snapshot antes de responder sobre inversiones del usuario.",
-      "Responde SIEMPRE en texto natural dentro del chat. No menciones componentes, widgets, tablas externas, paneles ni secciones visuales.",
-      "Nunca digas frases como: 'revisa el componente a continuación', 'en el componente', 'en la tabla siguiente' o 'se muestra abajo'.",
-      "Usa directamente los datos de la herramienta para contestar la pregunta del usuario.",
-      "Usa los campos topInvestmentType, typeBreakdown, riskBreakdown, investorProfile, investorProfileReason, biggestInvestment, concentrationWarnings, maturingSoon y maturingSoonList cuando estén disponibles.",
-      "Si el usuario pregunta qué inversiones vencen pronto, responde directamente con la lista de maturingSoonList. Si la lista está vacía, di claramente que no tiene inversiones venciendo en los próximos 30 días.",
-      "Explica con montos y porcentajes cuando el usuario pregunte por concentración, perfil o tipo de inversión dominante.",
+  return new LlmAgent({
+    name: "finance_agent",
+    model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+    instruction: [
+      "Eres Aura, asistente de finanzas personales de Vibantik. Respondes siempre en español.",
+      "Consulta una herramienta antes de afirmar datos del usuario. No inventes montos ni fechas.",
+      "Usa get_budget_snapshot para preguntas sobre presupuesto, saldo restante y control del gasto.",
+      "Usa get_goals_snapshot para preguntas sobre metas de ahorro, progreso y vencimientos de metas.",
+      "Usa get_investments_snapshot para inversiones, perfil inversionista, CETES, fondos, vencimientos de inversiones, concentración y rendimiento.",
+      "Usa get_financial_overview para preguntas que cruzan varias áreas a la vez.",
+      "Usa search_finance_memory para mantener continuidad con conversaciones previas.",
+      "Responde siempre en texto directo dentro del chat. No menciones componentes, widgets, tablas externas ni paneles.",
       "No prometas rendimientos, no des asesoría regulatoria y no recomiendes comprar o vender instrumentos específicos.",
-      "Puedes dar observaciones educativas y sugerir revisar la diversificación si hay concentración alta.",
+      "Si el usuario no tiene uuid o no hay datos, dilo claramente.",
       createReadOnlyPolicyMessage(),
     ].join(" "),
-    [investmentsSnapshotTool]
-  ),
-});
-
-    return new LlmAgent({
-    name: "finance_concierge",
-    description:
-      "Concierge financiero que coordina ayuda entre presupuestos, metas e inversiones.",
-    subAgents: [budgetAdvisor, goalsCoach, investmentAdvisor],
-    ...createSharedAgentConfig(
-      requestContext,
-      [
-        "Eres Aura Finance Concierge para Vibantik y respondes siempre en espanol.",
-        "Tu rol es dar ayuda util y controlada sobre presupuestos, metas e inversiones.",
-        "Todas las respuestas deben ser texto directo dentro del chat.",
-        "No prometas mostrar componentes, widgets, graficas, tablas externas, simuladores, paneles ni contenido adicional debajo del mensaje.",
-        "Nunca digas frases como: 'revisa el componente a continuacion', 'en el componente', 'en la tabla siguiente', 'se muestra abajo', 'usa nuestro simulador' o similares.",
-        "Si el usuario pregunta sobre inversiones, vencimientos, perfil inversionista, capital invertido, concentracion, rendimiento, CETES, pagarés, fondos o tipo de inversion dominante, DEBES delegar al subagente investment_advisor.",
-        "Si usas una herramienta o delegas a un subagente, resume el resultado directamente en el mensaje final.",
-        "Antes de afirmar datos del usuario, consulta una tool o delega a un subagente especialista.",
-        "Si faltan datos del usuario, dilo con claridad y pide continuar desde el chatbot autenticado.",
-        "No ejecutes cambios de escritura en este flujo.",
-        "Si la pregunta cruza varias areas, usa get_financial_overview y luego sintetiza de forma clara.",
-      ].join(" "),
-      [financialOverviewTool, financeMemoryTool]
-    ),
+    tools: [
+      budgetSnapshotTool,
+      goalsSnapshotTool,
+      investmentsSnapshotTool,
+      financialOverviewTool,
+      financeMemoryTool,
+    ],
+    beforeToolCallback,
+    afterAgentCallback,
   });
 };
 

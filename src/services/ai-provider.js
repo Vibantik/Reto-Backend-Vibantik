@@ -1,35 +1,10 @@
-/**
- * AI Provider Abstraction Layer
- *
- * Routes AI requests to either Ollama or Google Gemini based on the
- * AI_PROVIDER environment variable ("ollama" | "gemini").
- *
- * Environment variables consumed:
- *   AI_PROVIDER     – "ollama" (default) or "gemini"
- *
- *   Ollama-specific:
- *     OLLAMA_URL    – e.g. "http://localhost:11434/"
- *     MODEL         – Ollama model name
- *     OLLAMA_MODEL  – fallback model name used by categorization
- *
- *   Gemini-specific:
- *     GEMINI_API_KEY – Google AI Studio API key
- *     GEMINI_MODEL   – e.g. "gemini-2.0-flash"
- */
-
 const { Readable } = require("stream");
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getProvider() {
   return (process.env.AI_PROVIDER || "ollama").toLowerCase();
 }
 
-/**
- * Convert an Ollama-style messages array [{ role, content }] into Gemini's
- * `contents` format [{ role: "user"|"model", parts: [{ text }] }].
- * System messages are extracted separately.
- */
 function toGeminiContents(messages) {
   const systemParts = [];
   const contents = [];
@@ -48,17 +23,6 @@ function toGeminiContents(messages) {
   return { systemInstruction: systemParts.join("\n"), contents };
 }
 
-// ─── Chat (non-streaming) ────────────────────────────────────────────────────
-
-/**
- * Send a chat completion request and return the full text response.
- *
- * @param {Array<{role: string, content: string}>} messages
- * @param {object}  [opts]
- * @param {boolean} [opts.stream]  – ignored here, always false
- * @param {string}  [opts.model]   – override model name
- * @returns {Promise<string>} The assistant's reply text.
- */
 async function chat(messages, opts = {}) {
   const provider = getProvider();
 
@@ -130,18 +94,6 @@ async function _geminiChat(messages, opts) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-// ─── Chat (streaming) ────────────────────────────────────────────────────────
-
-/**
- * Send a streaming chat completion request and pipe the response to `res`.
- * The response is written as chunked text so the frontend can consume it
- * progressively.
- *
- * @param {Array<{role: string, content: string}>} messages
- * @param {import("express").Response} res – Express response object
- * @param {object} [opts]
- * @param {string} [opts.model]
- */
 async function chatStream(messages, res, opts = {}) {
   const provider = getProvider();
 
@@ -213,7 +165,6 @@ async function _geminiChatStream(messages, res, opts) {
   }
 
   // Transform the Gemini SSE stream into the same NDJSON format Ollama uses
-  // so the frontend doesn't need changes.
   res.setHeader("Content-Type", "text/plain");
   res.setHeader("Transfer-Encoding", "chunked");
 
@@ -264,18 +215,6 @@ async function _geminiChatStream(messages, res, opts) {
   }
 }
 
-// ─── Generate (non-streaming, for categorization) ─────────────────────────────
-
-/**
- * Send a single-prompt generation request (like Ollama's /api/generate).
- *
- * @param {string}  prompt
- * @param {object}  [opts]
- * @param {string}  [opts.model]
- * @param {object}  [opts.format]      – Ollama JSON format schema
- * @param {object}  [opts.options]     – Ollama options (temperature etc.)
- * @returns {Promise<string>} The raw text response.
- */
 async function generate(prompt, opts = {}) {
   const provider = getProvider();
 
